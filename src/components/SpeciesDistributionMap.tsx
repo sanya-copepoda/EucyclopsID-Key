@@ -152,10 +152,123 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
   }, [activeSpecimen]);
 
   if (!apiKey) {
+    const activeOrFirst = activeSpecimen || primaryGeocodedSpecimens[0] || null;
+    const osmLat = activeOrFirst?.lat ?? defaultCenter.lat;
+    const osmLon = activeOrFirst?.lon ?? defaultCenter.lng;
+    const bbox = `${(osmLon - 3.5).toFixed(4)}%2C${(osmLat - 1.8).toFixed(4)}%2C${(
+      osmLon + 3.5
+    ).toFixed(4)}%2C${(osmLat + 1.8).toFixed(4)}`;
+
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
-        Ключ Google Maps API не найден в переменных окружения (
-        <code className="font-mono">VITE_GOOGLE_MAPS_API_KEY</code>).
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900">
+              <MapPin className="h-4 w-4 text-sky-700" />
+              Карта мест сбора <em className="italic">{species.sp}</em> (OpenStreetMap)
+            </span>
+            <span className="rounded-md bg-sky-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-sky-900">
+              {primaryGeocodedSpecimens.length} из {species.specimenCount} экз. с координатами
+            </span>
+          </div>
+          {primaryGeocodedSpecimens.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[11px] text-slate-500 mr-1">Точки особей:</span>
+              {primaryGeocodedSpecimens.map((spec) => (
+                <button
+                  key={spec.num}
+                  type="button"
+                  onClick={() => {
+                    setActiveSpecimen(spec);
+                    onSelectSpecimen?.(spec);
+                  }}
+                  className={`rounded px-2 py-0.5 font-mono text-[11px] transition-colors cursor-pointer ${
+                    activeOrFirst?.num === spec.num
+                      ? 'bg-sky-700 text-white font-semibold'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  #{spec.num} ({spec.region})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {primaryGeocodedSpecimens.length === 0 ? (
+          <div className="flex h-52 items-center justify-center bg-slate-50 p-6 text-center text-xs text-slate-500">
+            У особей вида <strong className="mx-1 italic">{species.sp}</strong> в таблице не указаны географические координаты (N / E).
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-8 h-[340px] w-full bg-slate-100">
+              <iframe
+                title={`OpenStreetMap — ${species.sp}`}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${osmLat.toFixed(
+                  5
+                )}%2C${osmLon.toFixed(5)}`}
+                className="h-full w-full border-0"
+                loading="lazy"
+              />
+            </div>
+            <div className="lg:col-span-4 p-4 bg-slate-50/60 flex flex-col justify-between space-y-3 text-xs">
+              {activeOrFirst && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="font-bold italic text-sm text-slate-900">
+                      {activeOrFirst.sp}
+                    </span>
+                    <span className="rounded bg-white border border-slate-200 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-800">
+                      Препарат #{activeOrFirst.num}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-slate-700">
+                    <div>
+                      <strong>Регион:</strong> {activeOrFirst.region}
+                      {activeOrFirst.district && activeOrFirst.district !== '-'
+                        ? ` (${activeOrFirst.district})`
+                        : ''}
+                    </div>
+                    <div>
+                      <strong>Водоём:</strong> {activeOrFirst.waterbody || '—'}
+                    </div>
+                    <div>
+                      <strong>Координаты:</strong>{' '}
+                      <span className="font-mono">
+                        {activeOrFirst.lat?.toFixed(4)}° N, {activeOrFirst.lon?.toFixed(4)}° E
+                      </span>
+                    </div>
+                    <div>
+                      <strong>Дата и сборщик:</strong> {activeOrFirst.date} · leg.{' '}
+                      {activeOrFirst.collector}
+                    </div>
+                  </div>
+                  {onLoadSpecimenIntoKey && (
+                    <div className="pt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onLoadSpecimenIntoKey(activeOrFirst, 'diagnostic8')}
+                        className="flex-1 rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      >
+                        8 признаков
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onLoadSpecimenIntoKey(activeOrFirst, 'all')}
+                        className="flex-1 rounded bg-sky-700 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-sky-800"
+                      >
+                        В определитель
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="text-[11px] text-slate-500 border-t border-slate-200 pt-2">
+                Выберите кнопку <span className="font-mono">#num</span> сверху, чтобы переключить карту на другую точку находки этого вида.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
