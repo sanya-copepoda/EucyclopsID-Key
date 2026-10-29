@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image as ImageIcon, BarChart3, Plus, X, Sparkles } from 'lucide-react';
+import { Image as ImageIcon, BarChart3, X, Sparkles } from 'lucide-react';
 import {
   KeyConfig,
   SpeciesProfile,
@@ -14,8 +14,10 @@ import {
 } from '../utils/matrixEngine';
 import {
   formatQualitativeStateLabel,
+  getTraitDisplayComment,
   getTraitDisplayDescription,
 } from '../utils/traitAnnotationStore';
+import { useLanguage } from '../utils/i18n';
 
 interface DifferentialMatrixViewProps {
   speciesList: SpeciesProfile[];
@@ -67,6 +69,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
   onSelectSpeciesDetail,
   onOpenTraitInspector,
 }) => {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [comparisonSource, setComparisonSource] = useState<'candidates' | 'group' | 'custom'>(
     remainingCandidates.length >= 2 && remainingCandidates.length <= 15 ? 'candidates' : 'group'
   );
@@ -120,9 +125,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
     let list = traits.filter((t) => {
       if (traitSearch.trim()) {
         const q = traitSearch.trim().toLowerCase();
-        const ann = traitAnnotations[t.code];
-        const desc = getTraitDisplayDescription(t.code, ann);
-        const text = `${t.code} ${desc} ${ann?.comment || ''}`.toLowerCase();
+        const desc = getTraitDisplayDescription(t.code, traitAnnotations, lang);
+        const comment = getTraitDisplayComment(t.code, traitAnnotations, lang);
+        const text = `${t.code} ${desc} ${comment}`.toLowerCase();
         if (!text.includes(q)) return false;
       }
       if (onlySeparating && (separatingPower[t.code] || 0) < 35) {
@@ -134,7 +139,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
       list = [...list].sort((a, b) => (separatingPower[b.code] || 0) - (separatingPower[a.code] || 0));
     }
     return list;
-  }, [traits, traitSearch, onlySeparating, separatingPower, traitAnnotations]);
+  }, [traits, traitSearch, onlySeparating, separatingPower, traitAnnotations, lang]);
 
   const toggleCustomSpecies = (spName: string) => {
     setCustomSpNames((prev) =>
@@ -168,10 +173,14 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900">
-              Дифференциальная матрица и перекрытие диапазонов
+              {isEn
+                ? 'Differential Matrix & Range Overlap Comparison'
+                : 'Дифференциальная матрица и перекрытие диапазонов'}
             </h2>
             <p className="mt-0.5 text-xs text-slate-600">
-              Визуальное сравнение распределений (Box-Plot и гистограммы) и таблица всех признаков между видами-кандидатами.
+              {isEn
+                ? 'Visual distribution comparison (Box-Plot & Histograms) and complete trait comparison table across candidate species.'
+                : 'Визуальное сравнение распределений (Box-Plot и гистограммы) и таблица всех признаков между видами-кандидатами.'}
             </p>
           </div>
 
@@ -185,7 +194,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Оставшиеся кандидаты ({remainingCandidates.length})
+                {isEn
+                  ? `Remaining Candidates (${remainingCandidates.length})`
+                  : `Оставшиеся кандидаты (${remainingCandidates.length})`}
               </button>
               <button
                 onClick={() => setComparisonSource('group')}
@@ -195,7 +206,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                По видовой группе
+                {isEn ? 'By Species Group' : 'По видовой группе'}
               </button>
               <button
                 onClick={() => setComparisonSource('custom')}
@@ -205,7 +216,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Произвольный набор ({customSpNames.length})
+                {isEn
+                  ? `Custom Selection (${customSpNames.length})`
+                  : `Произвольный набор (${customSpNames.length})`}
               </button>
             </div>
           </div>
@@ -214,7 +227,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
         {/* Group or Custom selector */}
         {comparisonSource === 'group' && (
           <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
-            <span className="mr-2 text-xs font-medium text-slate-500">Группа видов:</span>
+            <span className="mr-2 text-xs font-medium text-slate-500">
+              {isEn ? 'Species group:' : 'Группа видов:'}
+            </span>
             {availableGroups.map((grp) => (
               <button
                 key={grp}
@@ -255,18 +270,22 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
         )}
       </div>
 
-      {/* NEW COMPONENT: Interactive Visual Distribution Comparison (Box-Plot & Histogram) */}
+      {/* Interactive Visual Distribution Comparison (Box-Plot & Histogram) */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-sky-700" />
               <h3 className="text-base font-bold text-slate-900">
-                Визуальное сравнение перекрытия диапазонов (Box-Plot и Гистограммы)
+                {isEn
+                  ? 'Visual Range Overlap Comparison (Box-Plot & Histograms)'
+                  : 'Визуальное сравнение перекрытия диапазонов (Box-Plot и Гистограммы)'}
               </h3>
             </div>
             <p className="mt-0.5 text-xs text-slate-600">
-              Сравнение квартилей (Q1–Медиана–Q3), эмпирического размаха [Min–Max], индивидуальных особей и расчётного допуска для выбранных признаков.
+              {isEn
+                ? 'Comparison of quartiles (Q1–Median–Q3), empirical range [Min–Max], individual specimens, and small-sample extrapolated tolerance.'
+                : 'Сравнение квартилей (Q1–Медиана–Q3), эмпирического размаха [Min–Max], индивидуальных особей и расчётного допуска для выбранных признаков.'}
             </p>
           </div>
 
@@ -280,7 +299,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Box-Plot + Точки особей
+                {isEn ? 'Box-Plot + Specimen Dots' : 'Box-Plot + Точки особей'}
               </button>
               <button
                 onClick={() => setChartType('histogram')}
@@ -290,7 +309,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Гистограмма частот
+                {isEn ? 'Frequency Histogram' : 'Гистограмма частот'}
               </button>
             </div>
 
@@ -302,7 +321,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                   onChange={(e) => setShowExtrapolatedInPlot(e.target.checked)}
                   className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                 />
-                Показать поправку на малую выборку
+                {isEn ? 'Show small-sample extrapolation' : 'Показать поправку на малую выборку'}
               </label>
             )}
           </div>
@@ -312,16 +331,18 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 rounded-lg p-3 border border-slate-100">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs font-semibold text-slate-700 mr-1">
-              Признаки на графиках ({plottedTraitCodes.length}):
+              {isEn
+                ? `Plotted traits (${plottedTraitCodes.length}):`
+                : `Признаки на графиках (${plottedTraitCodes.length}):`}
             </span>
             {plottedTraitCodes.map((code) => {
-              const desc = getTraitDisplayDescription(code, traitAnnotations[code]);
+              const desc = getTraitDisplayDescription(code, traitAnnotations, lang);
               return (
                 <button
                   key={code}
                   onClick={() => togglePlottedTrait(code)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-rose-700 transition-colors whitespace-nowrap shrink-0"
-                  title="Убрать признак с графика"
+                  title={isEn ? 'Remove trait from chart' : 'Убрать признак с графика'}
                 >
                   <span className="truncate max-w-[200px]">{desc}</span>
                   <span className="font-mono text-[10px] text-slate-400">{code}</span>
@@ -330,7 +351,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
               );
             })}
 
-            {/* Dropdown to add any of the 68 traits */}
+            {/* Dropdown to add any of the traits */}
             <select
               value=""
               onChange={(e) => {
@@ -340,12 +361,14 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
               }}
               className="max-w-xs rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:border-sky-600 focus:outline-none"
             >
-              <option value="">+ Добавить признак на график...</option>
+              <option value="">
+                {isEn ? '+ Add trait to chart...' : '+ Добавить признак на график...'}
+              </option>
               {traits.map((t) => {
-                const desc = getTraitDisplayDescription(t.code, traitAnnotations[t.code]);
+                const desc = getTraitDisplayDescription(t.code, traitAnnotations, lang);
                 return (
                   <option key={t.code} value={t.code}>
-                    {desc} [{t.code}] — разд. {separatingPower[t.code] || 0}%
+                    {desc} [{t.code}] — {isEn ? 'sep.' : 'разд.'} {separatingPower[t.code] || 0}%
                   </option>
                 );
               })}
@@ -358,7 +381,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
               className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-800 hover:bg-sky-100 transition-colors whitespace-nowrap shrink-0"
             >
               <Sparkles className="h-3.5 w-3.5 text-sky-600" />
-              Топ-3 разделяющих признака
+              {isEn ? 'Top-3 Separating Traits' : 'Топ-3 разделяющих признака'}
             </button>
           </div>
         </div>
@@ -366,14 +389,17 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
         {/* Plotted Traits Grid */}
         {plottedTraitCodes.length === 0 ? (
           <div className="p-6 text-center text-xs text-slate-500">
-            Выберите один или несколько признаков выше (или нажмите «График» в таблице ниже), чтобы визуально сравнить перекрытие диапазонов.
+            {isEn
+              ? 'Select one or more traits above (or click "+ Chart" in the table below) to visually compare range overlap.'
+              : 'Выберите один или несколько признаков выше (или нажмите «График» в таблице ниже), чтобы визуально сравнить перекрытие диапазонов.'}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             {plottedTraitCodes.map((code) => {
               const trait = traits.find((t) => t.code === code);
               if (!trait) return null;
-              const ann = traitAnnotations[trait.code];
+              const desc = getTraitDisplayDescription(trait.code, traitAnnotations, lang);
+              const comment = getTraitDisplayComment(trait.code, traitAnnotations, lang);
               const sepScore = separatingPower[trait.code] || 0;
               const userEnteredVal = activeFilters[trait.code]?.numericValue;
 
@@ -444,25 +470,25 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                             onClick={() => onOpenTraitInspector(trait)}
                             className="text-left text-sm font-bold text-slate-900 hover:text-sky-700 transition-colors"
                           >
-                            {getTraitDisplayDescription(trait.code, ann)}
+                            {desc}
                           </button>
                           <span className="rounded bg-slate-200/70 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
                             {trait.code}
                           </span>
                           <span className="font-mono text-xs font-medium text-emerald-700">
-                            · разделение: {sepScore}%
+                            · {isEn ? 'sep:' : 'разделение:'} {sepScore}%
                           </span>
                         </div>
-                        {ann?.comment?.trim() && (
+                        {comment && (
                           <div className="mt-0.5 text-[11px] text-slate-500">
-                            {ann.comment}
+                            {comment}
                           </div>
                         )}
                       </div>
                       <button
                         onClick={() => togglePlottedTrait(trait.code)}
                         className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-                        title="Закрыть график признака"
+                        title={isEn ? 'Close trait chart' : 'Закрыть график признака'}
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -471,11 +497,18 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     {/* Scale Header */}
                     {trait.kind !== 'qualitative' && chartType === 'boxplot' && (
                       <div className="mt-2 flex items-center justify-between font-mono text-[10px] tabular-nums text-slate-400 px-1">
-                        <span>Min шкалы: {formatTraitNumber(plotMin, trait.decimals)}</span>
                         <span>
-                          Середина: {formatTraitNumber(plotMin + plotSpan / 2, trait.decimals)}
+                          {isEn ? 'Scale Min:' : 'Min шкалы:'}{' '}
+                          {formatTraitNumber(plotMin, trait.decimals)}
                         </span>
-                        <span>Max шкалы: {formatTraitNumber(plotMax, trait.decimals)}</span>
+                        <span>
+                          {isEn ? 'Mid:' : 'Середина:'}{' '}
+                          {formatTraitNumber(plotMin + plotSpan / 2, trait.decimals)}
+                        </span>
+                        <span>
+                          {isEn ? 'Scale Max:' : 'Max шкалы:'}{' '}
+                          {formatTraitNumber(plotMax, trait.decimals)}
+                        </span>
                       </div>
                     )}
 
@@ -492,7 +525,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                 {sp.sp} (n=0)
                               </div>
                               <div className="col-span-8 text-[11px] font-mono text-slate-400">
-                                нет данных (?)
+                                {isEn ? 'no data (?)' : 'нет данных (?)'}
                               </div>
                             </div>
                           );
@@ -529,7 +562,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                           : 'border-slate-100 bg-slate-50 text-slate-300'
                                       }`}
                                     >
-                                      {formatQualitativeStateLabel(trait.code, sVal)}: {pct}% ({cnt})
+                                      {formatQualitativeStateLabel(trait.code, sVal, lang)}: {pct}% ({cnt})
                                     </div>
                                   );
                                 })}
@@ -616,7 +649,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                   <div
                                     className="absolute top-1 bottom-1 rounded bg-sky-200/70 border border-dashed border-sky-400"
                                     style={{ left: `${extLeft}%`, width: `${extWidth}%` }}
-                                    title={`Расчётный диапазон с поправкой (n=${st.n}): ${formatTraitNumber(
+                                    title={`${
+                                      isEn ? 'Extrapolated range' : 'Расчётный диапазон с поправкой'
+                                    } (n=${st.n}): ${formatTraitNumber(
                                       eMin,
                                       trait.decimals
                                     )}–${formatTraitNumber(eMax, trait.decimals)}`}
@@ -645,7 +680,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                   title={`Q1: ${formatTraitNumber(
                                     quartiles.q1,
                                     trait.decimals
-                                  )}, Медиана: ${formatTraitNumber(
+                                  )}, ${isEn ? 'Median' : 'Медиана'}: ${formatTraitNumber(
                                     quartiles.median,
                                     trait.decimals
                                   )}, Q3: ${formatTraitNumber(quartiles.q3, trait.decimals)}`}
@@ -668,7 +703,10 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                       key={i}
                                       className="absolute top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border border-slate-900 z-10"
                                       style={{ left: `${pos}%` }}
-                                      title={`Особь: ${formatTraitNumber(v, trait.decimals)}`}
+                                      title={`${isEn ? 'Specimen' : 'Особь'}: ${formatTraitNumber(
+                                        v,
+                                        trait.decimals
+                                      )}`}
                                     />
                                   );
                                 })}
@@ -678,7 +716,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                   <div
                                     className="absolute top-0 bottom-0 w-0.5 bg-rose-600 z-20"
                                     style={{ left: `${userLinePos}%` }}
-                                    title={`Введено в ключе: ${userEnteredVal}`}
+                                    title={`${isEn ? 'Entered in key' : 'Введено в ключе'}: ${userEnteredVal}`}
                                   />
                                 )}
                               </div>
@@ -741,10 +779,12 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                                   <div
                                     key={bIdx}
                                     className="h-full flex items-end justify-center bg-white/50"
-                                    title={`Интервал ${formatTraitNumber(
+                                    title={`${isEn ? 'Interval' : 'Интервал'} ${formatTraitNumber(
                                       bStart,
                                       trait.decimals
-                                    )}–${formatTraitNumber(bEnd, trait.decimals)}: ${cnt} экз.`}
+                                    )}–${formatTraitNumber(bEnd, trait.decimals)}: ${cnt} ${
+                                      isEn ? 'spec.' : 'экз.'
+                                    }`}
                                   >
                                     {cnt > 0 && (
                                       <div
@@ -758,7 +798,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                             </div>
 
                             <div className="col-span-3 font-mono text-[10px] tabular-nums text-right text-slate-600">
-                              ср. {formatTraitNumber(st.mean, 2)}
+                              {isEn ? 'mean' : 'ср.'} {formatTraitNumber(st.mean, 2)}
                             </div>
                           </div>
                         );
@@ -771,7 +811,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                     <div className="flex items-center gap-3">
                       <span className="inline-flex items-center gap-1">
                         <span className="inline-block h-2.5 w-3 rounded-xs bg-sky-600 border border-sky-900" />
-                        Q1–Q3 (медиана жёлтая)
+                        {isEn ? 'Q1–Q3 (yellow median)' : 'Q1–Q3 (медиана жёлтая)'}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <span className="inline-block h-0.5 w-3 bg-slate-800" />
@@ -780,7 +820,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                       {showExtrapolatedInPlot && (
                         <span className="inline-flex items-center gap-1">
                           <span className="inline-block h-2.5 w-3 rounded-xs bg-sky-200 border border-dashed border-sky-400" />
-                          Допуск на малую выборку
+                          {isEn ? 'Small-sample tolerance' : 'Допуск на малую выборку'}
                         </span>
                       )}
                     </div>
@@ -803,7 +843,9 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                 onChange={(e) => setOnlySeparating(e.target.checked)}
                 className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
               />
-              Показать только разделяющие признаки и сортировать по силе разделения
+              {isEn
+                ? 'Show only separating traits and sort by separating power'
+                : 'Показать только разделяющие признаки и сортировать по силе разделения'}
             </label>
           </div>
 
@@ -815,7 +857,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                   showRangeMode === 'both' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                Табличный + Расчётный
+                {isEn ? 'Empirical + Extrapolated' : 'Табличный + Расчётный'}
               </button>
               <button
                 onClick={() => setShowRangeMode('raw')}
@@ -823,7 +865,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                   showRangeMode === 'raw' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                Только табличный Min–Max
+                {isEn ? 'Empirical Min–Max Only' : 'Только табличный Min–Max'}
               </button>
               <button
                 onClick={() => setShowRangeMode('extrapolated')}
@@ -831,14 +873,14 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                   showRangeMode === 'extrapolated' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                Только с поправкой на n
+                {isEn ? 'Sample-Adjusted Only' : 'Только с поправкой на n'}
               </button>
             </div>
             <input
               type="text"
               value={traitSearch}
               onChange={(e) => setTraitSearch(e.target.value)}
-              placeholder="Фильтр признака..."
+              placeholder={isEn ? 'Filter trait...' : 'Фильтр признака...'}
               className="w-44 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono text-slate-900 focus:border-sky-600 focus:outline-none"
             />
           </div>
@@ -849,10 +891,10 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="sticky left-0 z-10 bg-slate-50 py-3 px-4 font-semibold text-slate-900 border-r border-slate-200 min-w-[250px]">
-                  Признак и расшифровка
+                  {isEn ? 'Trait & Description' : 'Признак и расшифровка'}
                 </th>
                 <th className="py-3 px-3 font-semibold text-slate-600 border-r border-slate-200 whitespace-nowrap">
-                  Сила разделения / График
+                  {isEn ? 'Separating Power / Chart' : 'Сила разделения / График'}
                 </th>
                 {comparedSpecies.map((sp) => (
                   <th
@@ -879,6 +921,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                 const isActiveInKey = Boolean(activeFilters[trait.code]);
                 const isPlotted = plottedTraitCodes.includes(trait.code);
                 const ann = traitAnnotations[trait.code];
+                const desc = getTraitDisplayDescription(trait.code, traitAnnotations, lang);
 
                 return (
                   <tr
@@ -893,7 +936,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                         className="w-full text-left group"
                       >
                         <div className="text-xs font-semibold text-slate-900 group-hover:text-sky-700 leading-snug">
-                          {getTraitDisplayDescription(trait.code, ann)}
+                          {desc}
                         </div>
                         <div className="mt-1 flex items-center justify-between gap-2">
                           <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
@@ -902,9 +945,15 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                           <span className="flex items-center gap-1 text-[10px] font-normal text-slate-400">
                             {ann?.imageUrl && <ImageIcon className="h-3 w-3 text-sky-600" />}
                             {trait.kind === 'qualitative'
-                              ? 'качеств.'
+                              ? isEn
+                                ? 'qual.'
+                                : 'качеств.'
                               : trait.kind === 'meristic'
-                              ? 'счёт'
+                              ? isEn
+                                ? 'meristic'
+                                : 'счёт'
+                              : isEn
+                              ? 'index'
                               : 'индекс'}
                           </span>
                         </div>
@@ -943,7 +992,13 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          {isPlotted ? 'На графике' : '+ График'}
+                          {isPlotted
+                            ? isEn
+                              ? 'Plotted'
+                              : 'На графике'
+                            : isEn
+                            ? '+ Chart'
+                            : '+ График'}
                         </button>
                       </div>
                     </td>
@@ -967,10 +1022,15 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                             key={sp.sp}
                             className="py-2.5 px-3.5 font-mono tabular-nums text-slate-900 border-r border-slate-100"
                           >
-                            <span className="font-semibold">{st.stateSet.join(' / ')}</span>
+                            <span className="font-semibold">
+                              {st.stateSet
+                                .map((s) => formatQualitativeStateLabel(trait.code, s, lang))
+                                .join(' / ')}
+                            </span>
                             {isPoly && (
                               <div className="text-[10px] text-amber-700">
-                                изменчив ({st.stateSet.map((s) => `${s}:${st.stateCounts[s]}`).join(', ')})
+                                {isEn ? 'polymorphic' : 'изменчив'} (
+                                {st.stateSet.map((s) => `${s}:${st.stateCounts[s]}`).join(', ')})
                               </div>
                             )}
                           </td>
@@ -1014,7 +1074,7 @@ export const DifferentialMatrixView: React.FC<DifferentialMatrixViewProps> = ({
                               <div className="font-medium text-slate-900">{rawStr}</div>
                               {rawStr !== extStr && (
                                 <div className="text-[10px] text-sky-700">
-                                  допуск: [{extStr}]
+                                  {isEn ? 'tol:' : 'допуск:'} [{extStr}]
                                 </div>
                               )}
                             </div>

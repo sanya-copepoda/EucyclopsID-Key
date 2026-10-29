@@ -1,5 +1,6 @@
 // Source: Google Maps Platform Code Assist
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Globe, Mail } from 'lucide-react';
 import { DEFAULT_EUCYCLOPS_CSV } from './data/rawCsvData';
 import {
   KeyConfig,
@@ -21,6 +22,7 @@ import {
   loadTraitAnnotations,
   saveTraitAnnotations,
 } from './utils/traitAnnotationStore';
+import { translateRegion, useLanguage } from './utils/i18n';
 import { PolyclaveKeyWorkspace } from './components/PolyclaveKeyWorkspace';
 import { DifferentialMatrixView } from './components/DifferentialMatrixView';
 import { AboutKeyView } from './components/AboutKeyView';
@@ -43,6 +45,9 @@ const DEFAULT_CONFIG: KeyConfig = {
 };
 
 export default function App() {
+  const { lang, setLang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [csvText, setCsvText] = useState<string>(DEFAULT_EUCYCLOPS_CSV);
   const [extraSpecimens, setExtraSpecimens] = useState<SpecimenRecord[]>(() =>
     loadExtraSpecimens()
@@ -238,9 +243,16 @@ export default function App() {
     }
 
     setActiveFilters(nextFilters);
+    const regionLabel = translateRegion(specimen.region, lang);
     setLoadedSpecimenLabel(
-      `#${specimen.num} (${specimen.sp}, ${specimen.region}, ${
-        mode === 'diagnostic8' ? '8 диагностических признаков' : 'все промеры'
+      `#${specimen.num} (${specimen.sp}, ${regionLabel}, ${
+        mode === 'diagnostic8'
+          ? isEn
+            ? '8 diagnostic traits'
+            : '8 диагностических признаков'
+          : isEn
+          ? 'all measurements'
+          : 'все промеры'
       })`
     );
     setActiveTab('key');
@@ -257,7 +269,9 @@ export default function App() {
         setExtraSpecimens([]);
         saveExtraSpecimens([]);
         setActiveFilters({});
-        setLoadedSpecimenLabel(`Загружен файл: ${file.name}`);
+        setLoadedSpecimenLabel(
+          isEn ? `Loaded file: ${file.name}` : `Загружен файл: ${file.name}`
+        );
       }
     };
     reader.readAsText(file, 'utf-8');
@@ -282,7 +296,7 @@ export default function App() {
         </div>
       )}
       {/* Top Bar Contract: 1 row, 3 zones separated by gap-8 */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-8 border-b border-slate-200 bg-white px-6 py-3.5">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-6 border-b border-slate-200 bg-white px-6 py-3.5">
         {/* Zone 1: Single text element wordmark */}
         <a
           href="#key"
@@ -309,7 +323,7 @@ export default function App() {
                 : 'hover:text-slate-900'
             }`}
           >
-            Определитель
+            {isEn ? 'Interactive Key' : 'Определитель'}
           </a>
           <a
             href="#differential"
@@ -323,7 +337,7 @@ export default function App() {
                 : 'hover:text-slate-900'
             }`}
           >
-            Дифференциальная матрица
+            {isEn ? 'Differential Matrix' : 'Дифференциальная матрица'}
           </a>
           <a
             href="#about"
@@ -337,12 +351,45 @@ export default function App() {
                 : 'hover:text-slate-900'
             }`}
           >
-            Информация о ключе
+            {isEn ? 'About & Database' : 'Информация о ключе'}
           </a>
         </nav>
 
-        {/* Zone 3: 1 primary action */}
-        <div className="flex items-center shrink-0">
+        {/* Zone 3: Language Switcher (EN / RU) + Primary Action */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Language Switcher Pill */}
+          <div
+            className="inline-flex items-center rounded-lg border border-slate-300 bg-slate-100 p-0.5 text-xs font-bold"
+            role="group"
+            aria-label="Language switcher"
+          >
+            <button
+              type="button"
+              onClick={() => setLang('en')}
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition-colors cursor-pointer ${
+                isEn
+                  ? 'bg-sky-700 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Switch interface to English"
+            >
+              <Globe className="h-3 w-3" />
+              <span>EN</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang('ru')}
+              className={`rounded-md px-2.5 py-1 transition-colors cursor-pointer ${
+                !isEn
+                  ? 'bg-sky-700 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Переключить интерфейс на русский язык"
+            >
+              <span>RU</span>
+            </button>
+          </div>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -352,9 +399,9 @@ export default function App() {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            Загрузить CSV матрицу
+            {isEn ? 'Upload CSV Matrix' : 'Загрузить CSV матрицу'}
           </button>
         </div>
       </header>
@@ -420,13 +467,35 @@ export default function App() {
         )}
       </main>
 
-      {/* Quiet Footer with JSON/CSV export & Google AI Studio credit */}
+      {/* Quiet Footer with JSON/CSV export, Contact email & credit */}
       <footer className="border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4">
-          <div>
-            Интерактивный определитель рода <em>Eucyclops</em> (база препаратов А. А. Новикова, КФУ · создано с помощью Google AI Studio) ·{' '}
-            {dataset.specimens.length} особей · {dataset.speciesList.filter((s) => s.sp !== '?').length}{' '}
-            видов · {dataset.traits.length} признаков
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>
+              {isEn ? (
+                <>
+                  Interactive Key to the Genus <em>Eucyclops</em> (Slide database of Aleksandr A. Novikov, Kazan Federal University) ·{' '}
+                  {dataset.specimens.length} specimens ·{' '}
+                  {dataset.speciesList.filter((s) => s.sp !== '?').length} species ·{' '}
+                  {dataset.traits.length} traits
+                </>
+              ) : (
+                <>
+                  Интерактивный определитель рода <em>Eucyclops</em> (база препаратов А. А. Новикова, КФУ) ·{' '}
+                  {dataset.specimens.length} особей ·{' '}
+                  {dataset.speciesList.filter((s) => s.sp !== '?').length} видов ·{' '}
+                  {dataset.traits.length} признаков
+                </>
+              )}
+            </span>
+            <span>·</span>
+            <a
+              href="mailto:aleksandr-novikov-2011@list.ru"
+              className="inline-flex items-center gap-1 font-medium text-sky-800 hover:underline"
+            >
+              <Mail className="h-3 w-3" />
+              aleksandr-novikov-2011@list.ru
+            </a>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <input
@@ -438,30 +507,32 @@ export default function App() {
             />
             <button
               onClick={() => setIsAddSpecimenModalOpen(true)}
-              className="hover:text-slate-900 underline font-medium text-sky-800"
+              className="hover:text-slate-900 underline font-medium text-sky-800 cursor-pointer"
             >
-              + Добавить особей в базу
+              {isEn ? '+ Add Specimens to Database' : '+ Добавить особей в базу'}
             </button>
             <span>·</span>
             <button
               onClick={handleExportFullCsv}
-              className="hover:text-slate-900 underline"
+              className="hover:text-slate-900 underline cursor-pointer"
             >
-              Скачать CSV матрицу ({dataset.specimens.length} экз.)
+              {isEn
+                ? `Download CSV Matrix (${dataset.specimens.length} spec.)`
+                : `Скачать CSV матрицу (${dataset.specimens.length} экз.)`}
             </button>
             <span>·</span>
             <button
               onClick={handleExportAnnotationsJson}
-              className="hover:text-slate-900 underline"
+              className="hover:text-slate-900 underline cursor-pointer"
             >
-              Экспорт описаний (.json)
+              {isEn ? 'Export Annotations (.json)' : 'Экспорт описаний (.json)'}
             </button>
             <span>·</span>
             <button
               onClick={() => annotationsImportRef.current?.click()}
-              className="hover:text-slate-900 underline"
+              className="hover:text-slate-900 underline cursor-pointer"
             >
-              Импорт описаний (.json)
+              {isEn ? 'Import Annotations (.json)' : 'Импорт описаний (.json)'}
             </button>
           </div>
         </div>
@@ -511,3 +582,4 @@ export default function App() {
     </div>
   );
 }
+

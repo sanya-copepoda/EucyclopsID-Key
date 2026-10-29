@@ -11,7 +11,6 @@ import {
   ArrowUpDown,
   Layers,
   Image as ImageIcon,
-  MessageSquareText,
   BookOpen,
   ChevronDown,
   ChevronUp,
@@ -37,10 +36,11 @@ import {
 } from '../utils/matrixEngine';
 import {
   formatQualitativeStateLabel,
-  getDefaultPlaceholderDescription,
+  getQualitativeStateMeaning,
+  getTraitDisplayComment,
   getTraitDisplayDescription,
-  QUALITATIVE_STATE_LABELS,
 } from '../utils/traitAnnotationStore';
+import { getAnatomicalSectionLabel, useLanguage } from '../utils/i18n';
 import { InteractiveAnatomyMap } from './InteractiveAnatomyMap';
 
 interface PolyclaveKeyWorkspaceProps {
@@ -70,16 +70,16 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
   activeFilters,
   config,
   loadedSpecimenLabel,
-  totalSpecimensCount,
-  extraSpecimensCount,
   onUpdateFilter,
   onResetAllFilters,
   onChangeConfig,
   onSelectSpeciesDetail,
   onOpenTraitInspector,
   onOpenDifferentialCompare,
-  onOpenAddSpecimenModal,
 }) => {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<AnatomicalSection | 'all'>('all');
   const [selectedKind, setSelectedKind] = useState<
@@ -91,7 +91,6 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
   const [isInstructionOpen, setIsInstructionOpen] = useState<boolean>(false);
   const [isAnatomyMapOpen, setIsAnatomyMapOpen] = useState<boolean>(true);
 
-  // Local text draft state for quantitative inputs so typing "4," or "0." works smoothly
   const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({});
 
   const remainingCandidates = useMemo(
@@ -109,7 +108,6 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
     [remainingCandidates]
   );
 
-  // Compute Lucid-style separating power for each trait among the currently remaining candidate species
   const separatingPower = useMemo(
     () => computeTraitSeparatingPower(remainingSpeciesProfiles, traits, config),
     [remainingSpeciesProfiles, traits, config]
@@ -133,7 +131,6 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
     return traits.filter((t) => isTraitEntered(t.code)).length;
   }, [activeFilters, traits]);
 
-  // Top 6 recommended next traits to examine (not yet entered, highest separating power)
   const bestNextTraits = useMemo(() => {
     if (remainingCandidates.length <= 1) return [];
     return traits
@@ -151,8 +148,11 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
       if (selectedKind === 'entered' && !isTraitEntered(t.code)) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
-        const ann = traitAnnotations[t.code];
-        const descText = `${t.code} ${ann?.description || ''} ${ann?.comment || ''}`.toLowerCase();
+        const descEn = getTraitDisplayDescription(t.code, traitAnnotations, 'en');
+        const descRu = getTraitDisplayDescription(t.code, traitAnnotations, 'ru');
+        const commEn = getTraitDisplayComment(t.code, traitAnnotations, 'en');
+        const commRu = getTraitDisplayComment(t.code, traitAnnotations, 'ru');
+        const descText = `${t.code} ${descEn} ${descRu} ${commEn} ${commRu}`.toLowerCase();
         if (!descText.includes(q)) return false;
       }
       return true;
@@ -243,7 +243,6 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
     }
 
     const normalized = trimmed.replace(/,/g, '.');
-    // Check if user entered a range like "12-18" or "12..18" or "12 – 18"
     const rangeMatch = normalized.match(
       /^(\d+(?:\.\d+)?)\s*(?:[-–—]|\.\.)\s*(\d+(?:\.\d+)?)$/
     );
@@ -290,7 +289,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
         borderLeft: 'border-l-4 border-l-emerald-600',
         nameColor: 'text-emerald-900 hover:text-emerald-700',
         badgeClass: 'bg-emerald-100/90 text-emerald-900 border border-emerald-300',
-        badgeLabel: 'Валидный вид (valid)',
+        badgeLabel: isEn ? 'Valid species (valid)' : 'Валидный вид (valid)',
       };
     }
     if (category === 'candidate') {
@@ -298,14 +297,14 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
         borderLeft: 'border-l-4 border-l-sky-600',
         nameColor: 'text-sky-900 hover:text-sky-700',
         badgeClass: 'bg-sky-100/90 text-sky-900 border border-sky-300',
-        badgeLabel: 'Вид-кандидат (n. sp.)',
+        badgeLabel: isEn ? 'Candidate species (n. sp.)' : 'Вид-кандидат (n. sp.)',
       };
     }
     return {
       borderLeft: 'border-l-4 border-l-amber-500',
       nameColor: 'text-amber-900 hover:text-amber-700',
       badgeClass: 'bg-amber-100/90 text-amber-900 border border-amber-300',
-      badgeLabel: `Сомнительный (${status})`,
+      badgeLabel: isEn ? `Doubtful (${status})` : `Сомнительный (${status})`,
     };
   };
 
@@ -325,7 +324,11 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               }`}
             >
               <BookOpen className="h-4 w-4 shrink-0" />
-              <span>Инструкция по изготовлению препарата и работе с ключом</span>
+              <span>
+                {isEn
+                  ? 'Slide Preparation & How to Use the Key'
+                  : 'Инструкция по изготовлению препарата и работе с ключом'}
+              </span>
               {isInstructionOpen ? (
                 <ChevronUp className="h-4 w-4 shrink-0" />
               ) : (
@@ -345,7 +348,11 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               <Layers className="h-4 w-4 text-rose-600 shrink-0" />
               <span>
                 {isAnatomyMapOpen
-                  ? 'Скрыть интерактивную схему рачка'
+                  ? isEn
+                    ? 'Hide Interactive Anatomy Diagram'
+                    : 'Скрыть интерактивную схему рачка'
+                  : isEn
+                  ? 'Interactive Anatomy Diagram (select by appendage)'
                   : 'Интерактивная схема рачка (выбор по конечностям)'}
               </span>
             </button>
@@ -353,7 +360,15 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50/70 px-3 py-1.5 text-xs font-medium text-sky-950">
               <Scale className="h-3.5 w-3.5 text-sky-700 shrink-0" />
               <span>
-                Количественные данные: вводите <strong>среднее между правой и левой стороной</strong> одной особи
+                {isEn ? (
+                  <>
+                    Quantitative data: enter the <strong>mean between right and left sides</strong> of a single specimen
+                  </>
+                ) : (
+                  <>
+                    Количественные данные: вводите <strong>среднее между правой и левой стороной</strong> одной особи
+                  </>
+                )}
               </span>
             </span>
           </div>
@@ -361,11 +376,23 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           <div className="flex items-start gap-1.5 text-xs text-slate-600">
             <Info className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
             <span>
-              <strong>Примечание:</strong> не включены{' '}
-              <em className="italic">
-                E. persistens, E. maritimus, E. orthostylis, E. euacanthus, E. dumonti
-              </em>{' '}
-              (возможно, о чём-то я не знаю).
+              {isEn ? (
+                <>
+                  <strong>Note:</strong> Not included:{' '}
+                  <em className="italic">
+                    E. persistens, E. maritimus, E. orthostylis, E. euacanthus, E. dumonti
+                  </em>{' '}
+                  (and possibly some others unknown to the author).
+                </>
+              ) : (
+                <>
+                  <strong>Примечание:</strong> не включены{' '}
+                  <em className="italic">
+                    E. persistens, E. maritimus, E. orthostylis, E. euacanthus, E. dumonti
+                  </em>{' '}
+                  (возможно, о чём-то я не знаю).
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -378,111 +405,167 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               <div className="lg:col-span-7 space-y-4 text-xs text-slate-700 leading-relaxed">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
                   <h3 className="text-sm font-bold text-slate-900">
-                    1. Изготовление микропрепарата (Cyclopoida)
+                    {isEn
+                      ? '1. Microscopic Slide Preparation (Cyclopoida)'
+                      : '1. Изготовление микропрепарата (Cyclopoida)'}
                   </h3>
-                  <p>
-                    <strong>Cyclopoida</strong> (для идентификации большинства родов подходят только{' '}
-                    <strong>самки</strong>). Ключевые признаки – вооружение коксобазиса антенн (
-                    <span className="font-mono font-semibold">A2</span>), коксы четвёртой пары ног (
-                    <span className="font-mono font-semibold">P4</span>) и строение каудальных ветвей.
-                  </p>
-                  <p>
-                    Для препарата, не повреждая рачка, нужно отделить торакальный сомит, несущий{' '}
-                    <span className="font-mono">P5</span> вместе с абдоменом (вся уросома), дальше
-                    отделить четвёртую пару ног, в идеале без сомита, и левую и правую{' '}
-                    <span className="font-mono">A2</span>.
-                  </p>
-                  <p>
-                    <strong>Препарат включает:</strong> обе <span className="font-mono">A2</span>,
-                    расположенные параллельно (одна – фронтальной, другая – каудальной стороной вверх,
-                    чтобы видеть шипики с обеих сторон); <span className="font-mono">P4</span> (задней
-                    стороной вверх); абдомен с <span className="font-mono">P5</span> (уросома);
-                    остальное тело (вентральной стороной вверх).
-                  </p>
+                  {isEn ? (
+                    <>
+                      <p>
+                        <strong>Cyclopoida</strong> (for the identification of most genera, only{' '}
+                        <strong>adult females</strong> are suitable). The key diagnostic characters are the ornamentation of the antennal coxobasis (
+                        <span className="font-mono font-semibold">A2</span>), the coxa of the fourth swimming legs (
+                        <span className="font-mono font-semibold">P4</span>), and the structure of the caudal rami.
+                      </p>
+                      <p>
+                        To prepare a slide without damaging the specimen, first detach the thoracic somite bearing{' '}
+                        <span className="font-mono">P5</span> together with the abdomen (the entire urosoma); next, detach the fourth pair of legs (<span className="font-mono">P4</span>), ideally without the somite, and both left and right antennae (<span className="font-mono">A2</span>).
+                      </p>
+                      <p>
+                        <strong>The final slide includes:</strong> both <span className="font-mono">A2</span> mounted parallel to each other (one with the frontal/anterior side up, the other with the caudal/posterior side up so spinules on both sides are clearly visible); <span className="font-mono">P4</span> (caudal/posterior side up); abdomen with <span className="font-mono">P5</span> (urosoma); and the remaining body (<span className="font-mono">Ceph+T2-T3</span>, ventral side up).
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        <strong>Cyclopoida</strong> (для идентификации большинства родов подходят только{' '}
+                        <strong>самки</strong>). Ключевые признаки – вооружение коксобазиса антенн (
+                        <span className="font-mono font-semibold">A2</span>), коксы четвёртой пары ног (
+                        <span className="font-mono font-semibold">P4</span>) и строение каудальных ветвей.
+                      </p>
+                      <p>
+                        Для препарата, не повреждая рачка, нужно отделить торакальный сомит, несущий{' '}
+                        <span className="font-mono">P5</span> вместе с абдоменом (вся уросома), дальше отделить четвёртую пару ног, в идеале без сомита, и левую и правую{' '}
+                        <span className="font-mono">A2</span>.
+                      </p>
+                      <p>
+                        <strong>Препарат включает:</strong> обе <span className="font-mono">A2</span>, расположенные параллельно (одна – фронтальной, другая – каудальной стороной вверх, чтобы видеть шипики с обеих сторон); <span className="font-mono">P4</span> (задней стороной вверх); абдомен с <span className="font-mono">P5</span> (уросома); остальное тело (вентральной стороной вверх).
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4 space-y-2">
                   <h3 className="text-sm font-bold text-slate-900">
-                    2. Правило расчёта средних значений (справа и слева)
+                    {isEn
+                      ? '2. Rule for Bilateral Averaging (Right & Left Sides)'
+                      : '2. Правило расчёта средних значений (справа и слева)'}
                   </h3>
                   <p className="text-slate-800">
-                    Для всех количественных признаков парных структур (число шипиков в группах на{' '}
-                    <span className="font-mono">A2</span> и коксе <span className="font-mono">P4</span>,
-                    число зубцов серры, промеры и индексы каудальных ветвей и{' '}
-                    <span className="font-mono">P4 Enp3</span>) необходимо приводить{' '}
-                    <strong className="underline decoration-sky-600/60 underline-offset-2 text-sky-950">
-                      среднее значение между правой и левой стороной тела одной особи
-                    </strong>{' '}
-                    (например, если слева 10 шипиков, а справа 11 — вводится <span className="font-mono">10.5</span>).
+                    {isEn ? (
+                      <>
+                        For all quantitative traits of paired structures (spinule counts in groups on{' '}
+                        <span className="font-mono">A2</span> and the coxa of <span className="font-mono">P4</span>, number of denticles on the serra, and morphometric measurements/indices of the caudal rami and{' '}
+                        <span className="font-mono">P4 Enp3</span>), always enter the{' '}
+                        <strong className="underline decoration-sky-600/60 underline-offset-2 text-sky-950">
+                          mean value between the right and left sides of the same individual
+                        </strong>{' '}
+                        (e.g., if there are 10 spinules on the left and 11 on the right, enter <span className="font-mono">10.5</span>).
+                      </>
+                    ) : (
+                      <>
+                        Для всех количественных признаков парных структур (число шипиков в группах на{' '}
+                        <span className="font-mono">A2</span> и коксе <span className="font-mono">P4</span>, число зубцов серры, промеры и индексы каудальных ветвей и{' '}
+                        <span className="font-mono">P4 Enp3</span>) необходимо приводить{' '}
+                        <strong className="underline decoration-sky-600/60 underline-offset-2 text-sky-950">
+                          среднее значение между правой и левой стороной тела одной особи
+                        </strong>{' '}
+                        (например, если слева 10 шипиков, а справа 11 — вводится <span className="font-mono">10.5</span>).
+                      </>
+                    )}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
                   <h3 className="text-sm font-bold text-slate-900">
-                    3. Как пользоваться многовходовым определителем
+                    {isEn
+                      ? '3. How to Use the Multi-Access Interactive Key'
+                      : '3. Как пользоваться многовходовым определителем'}
                   </h3>
-                  <ul className="list-disc pl-5 space-y-1.5 text-slate-700">
-                    <li>
-                      <strong>Произвольный порядок признаков (Lucid-принцип):</strong> вам не нужно идти по
-                      порядку. Выберите любой отчётливо видимый на вашем препарате признак и укажите его
-                      значение — неподходящие виды сразу отфильтруются в правой колонке.
-                    </li>
-                    <li>
-                      <strong>Автоматическая подсказка следующего шага:</strong> блок{' '}
-                      <em>«Наиболее информативные признаки»</em> пересчитывает силу разделения (в %) среди
-                      оставшихся кандидатов и подсказывает, на какой признак лучше посмотреть дальше.
-                      Признаки, которые перестали разделять оставшиеся виды (0%), автоматически опускаются
-                      в самый низ списка.
-                    </li>
-                    <li>
-                      <strong>Ввод качественных и количественных признаков:</strong> для качественных
-                      признаков нажимайте на кнопки состояний (при сомнении можно выбрать сразу два
-                      состояния; изменчивые виды учитываются при нажатии любого из свойственных им
-                      состояний). Для количественных признаков и индексов можно ввести одно число
-                      (например, <span className="font-mono">4.8</span>) или диапазон через дефис (
-                      <span className="font-mono">14-18</span>).
-                    </li>
-                    <li>
-                      <strong>Иллюстрации и описания:</strong> при нажатии на название любого признака
-                      открывается его карточка, куда можно прикрепить эталонный рисунок/фотографию и
-                      отредактировать комментарий.
-                    </li>
-                    <li>
-                      <strong>Цветовая маркировка видов в списке кандидатов:</strong>{' '}
-                      <span className="font-semibold text-emerald-800">зелёным</span> отмечены валидные
-                      виды, <span className="font-semibold text-sky-800">синим</span> — виды-кандидаты (
-                      <span className="font-mono">n. sp.</span>),{' '}
-                      <span className="font-semibold text-amber-800">янтарным</span> — сомнительные виды,
-                      требующие подтверждения. По клику на вид открывается его полный профиль и карта находок.
-                    </li>
-                  </ul>
+                  {isEn ? (
+                    <ul className="list-disc pl-5 space-y-1.5 text-slate-700">
+                      <li>
+                        <strong>Free-order trait entry (Lucid principle):</strong> You do not need to follow a fixed sequence. Pick any trait clearly visible on your slide and enter its state or value — non-matching species are immediately filtered out in the right column.
+                      </li>
+                      <li>
+                        <strong>Interactive next-step recommendation:</strong> The{' '}
+                        <em>“Most Informative Traits”</em> bar recalculates separating power (%) among the currently remaining candidate species and suggests which character to inspect next. Traits that no longer separate the remaining candidates (0%) automatically sink to the bottom of the list.
+                      </li>
+                      <li>
+                        <strong>Entering qualitative & quantitative characters:</strong> For qualitative traits, click the state buttons (if uncertain, you may select multiple states; polymorphic species are retained if any of their known states is selected). For quantitative traits and indices, enter a single number (e.g. <span className="font-mono">4.8</span>) or a range with a hyphen (<span className="font-mono">14-18</span>).
+                      </li>
+                      <li>
+                        <strong>Illustrations & notes:</strong> Click any trait name to open its card, where you can attach a reference drawing/micrograph and edit notes.
+                      </li>
+                      <li>
+                        <strong>Color-coded taxonomic status:</strong>{' '}
+                        <span className="font-semibold text-emerald-800">Green</span> indicates valid species, <span className="font-semibold text-sky-800">blue</span> indicates candidate new species (<span className="font-mono">n. sp.</span>), and{' '}
+                        <span className="font-semibold text-amber-800">amber</span> indicates doubtful taxa requiring confirmation. Click any species to open its full profile and distribution map.
+                      </li>
+                    </ul>
+                  ) : (
+                    <ul className="list-disc pl-5 space-y-1.5 text-slate-700">
+                      <li>
+                        <strong>Произвольный порядок признаков (Lucid-принцип):</strong> вам не нужно идти по порядку. Выберите любой отчётливо видимый на вашем препарате признак и укажите его значение — неподходящие виды сразу отфильтруются в правой колонке.
+                      </li>
+                      <li>
+                        <strong>Автоматическая подсказка следующего шага:</strong> блок{' '}
+                        <em>«Наиболее информативные признаки»</em> пересчитывает силу разделения (в %) среди оставшихся кандидатов и подсказывает, на какой признак лучше посмотреть дальше. Признаки, которые перестали разделять оставшиеся виды (0%), автоматически опускаются в самый низ списка.
+                      </li>
+                      <li>
+                        <strong>Ввод качественных и количественных признаков:</strong> для качественных признаков нажимайте на кнопки состояний (при сомнении можно выбрать сразу два состояния; изменчивые виды учитываются при нажатии любого из свойственных им состояний). Для количественных признаков и индексов можно ввести одно число (например, <span className="font-mono">4.8</span>) или диапазон через дефис (<span className="font-mono">14-18</span>).
+                      </li>
+                      <li>
+                        <strong>Иллюстрации и описания:</strong> при нажатии на название любого признака открывается его карточка, куда можно прикрепить эталонный рисунок/фотографию и отредактировать комментарий.
+                      </li>
+                      <li>
+                        <strong>Цветовая маркировка видов в списке кандидатов:</strong>{' '}
+                        <span className="font-semibold text-emerald-800">зелёным</span> отмечены валидные виды, <span className="font-semibold text-sky-800">синим</span> — виды-кандидаты (<span className="font-mono">n. sp.</span>),{' '}
+                        <span className="font-semibold text-amber-800">янтарным</span> — сомнительные виды, требующие подтверждения. По клику на вид открывается его полный профиль и карта находок.
+                      </li>
+                    </ul>
+                  )}
                 </div>
               </div>
 
               {/* Right 5 cols: Slide layout photograph */}
               <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
                 <div className="text-xs font-bold text-slate-900">
-                  Схема расположения частей рачка на предметном стекле:
+                  {isEn
+                    ? 'Layout of dissected copepod parts on a microscope slide:'
+                    : 'Схема расположения частей рачка на предметном стекле:'}
                 </div>
                 <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-2">
                   <img
                     src="/assets/aistudio/image_feb9e6e3.png"
-                    alt="Схема изготовления микропрепарата Eucyclops: Ceph+T2-T3, A2, Abd+T5, P4"
+                    alt="Slide preparation layout for Eucyclops: Ceph+T2-T3, A2, Abd+T5, P4"
                     className="w-full h-auto object-contain rounded"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-1">
                   <div className="rounded bg-white px-2.5 py-1.5 border border-slate-200/80">
-                    <strong className="font-mono text-rose-700">A2:</strong> обе антенны параллельно (фронтально и каудально)
+                    <strong className="font-mono text-rose-700">A2:</strong>{' '}
+                    {isEn
+                      ? 'both antennae mounted parallel (frontal & caudal sides up)'
+                      : 'обе антенны параллельно (фронтально и каудально)'}
                   </div>
                   <div className="rounded bg-white px-2.5 py-1.5 border border-slate-200/80">
-                    <strong className="font-mono text-rose-700">Abd+T5:</strong> уросома (абдомен вместе с сомитом P5)
+                    <strong className="font-mono text-rose-700">Abd+T5:</strong>{' '}
+                    {isEn
+                      ? 'urosoma (abdomen together with P5 somite)'
+                      : 'уросома (абдомен вместе с сомитом P5)'}
                   </div>
                   <div className="rounded bg-white px-2.5 py-1.5 border border-slate-200/80">
-                    <strong className="font-mono text-rose-700">P4:</strong> четвёртая пара ног (задней стороной вверх)
+                    <strong className="font-mono text-rose-700">P4:</strong>{' '}
+                    {isEn
+                      ? 'fourth swimming legs (posterior/caudal side up)'
+                      : 'четвёртая пара ног (задней стороной вверх)'}
                   </div>
                   <div className="rounded bg-white px-2.5 py-1.5 border border-slate-200/80">
-                    <strong className="font-mono text-rose-700">Ceph+T2-T3:</strong> цефалоторакс и торакальные сомиты (вентрально)
+                    <strong className="font-mono text-rose-700">Ceph+T2-T3:</strong>{' '}
+                    {isEn
+                      ? 'cephalothorax & thoracic somites (ventral side up)'
+                      : 'цефалоторакс и торакальные сомиты (вентрально)'}
                   </div>
                 </div>
               </div>
@@ -518,7 +601,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-sky-700" />
             <span className="text-xs font-semibold text-slate-800">
-              Режим диапазонов для малых выборок:
+              {isEn ? 'Small-sample range model:' : 'Режим диапазонов для малых выборок:'}
             </span>
             <select
               value={config.extrapolationMethod}
@@ -531,16 +614,24 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               className="rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-900 focus:border-sky-600 focus:outline-none"
             >
               <option value="bayesian_pooled">
-                Байесовская поправка (Pooled SD + d₂ Хартли) — Рекомендуется
+                {isEn
+                  ? 'Bayesian Adjustment (Pooled SD + Hartley d₂) — Recommended'
+                  : 'Байесовская поправка (Pooled SD + d₂ Хартли) — Рекомендуется'}
               </option>
               <option value="student_t">
-                Предиктивный интервал Стьюдента (Mean ± k·σ·√(1+1/n))
+                {isEn
+                  ? 'Student-t Predictive Interval (Mean ± k·σ·√(1+1/n))'
+                  : 'Предиктивный интервал Стьюдента (Mean ± k·σ·√(1+1/n))'}
               </option>
               <option value="cv_buffer">
-                Процентный буфер (±{config.percentBuffer}% с весом на малый n)
+                {isEn
+                  ? `Percentage Buffer (±${config.percentBuffer}% weighted for small n)`
+                  : `Процентный буфер (±${config.percentBuffer}% с весом на малый n)`}
               </option>
               <option value="strict_raw">
-                Строгий табличный [Min–Max] (без расширения для малых n)
+                {isEn
+                  ? 'Strict Observed [Min–Max] (no expansion for small n)'
+                  : 'Строгий табличный [Min–Max] (без расширения для малых n)'}
               </option>
             </select>
           </div>
@@ -548,7 +639,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           {config.extrapolationMethod !== 'strict_raw' &&
             config.extrapolationMethod !== 'cv_buffer' && (
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-600">Допуск:</span>
+                <span className="text-slate-600">{isEn ? 'Tolerance:' : 'Допуск:'}</span>
                 <input
                   type="range"
                   min={1.0}
@@ -570,7 +661,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
             )}
 
           <div className="flex items-center gap-2 border-l border-slate-200 pl-4 text-xs">
-            <span className="text-slate-600">Охват таксонов:</span>
+            <span className="text-slate-600">{isEn ? 'Taxon scope:' : 'Охват таксонов:'}</span>
             <select
               value={config.speciesScope}
               onChange={(e) =>
@@ -581,8 +672,12 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               }
               className="rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-900 focus:border-sky-600 focus:outline-none"
             >
-              <option value="all">Все виды из матрицы (32 вида)</option>
-              <option value="key_only">Только со статусом key: + (27 видов)</option>
+              <option value="all">
+                {isEn ? 'All matrix species (32 species)' : 'Все виды из матрицы (32 вида)'}
+              </option>
+              <option value="key_only">
+                {isEn ? 'Only status key: + (27 species)' : 'Только со статусом key: + (27 видов)'}
+              </option>
             </select>
           </div>
         </div>
@@ -590,7 +685,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
         <div className="flex items-center gap-3">
           {loadedSpecimenLabel && (
             <span className="text-xs font-medium text-sky-800">
-              Тест особи: {loadedSpecimenLabel}
+              {isEn ? `Specimen test: ${loadedSpecimenLabel}` : `Тест особи: ${loadedSpecimenLabel}`}
             </span>
           )}
           {activeFilterCount > 0 && (
@@ -599,10 +694,12 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                 setNumericDrafts({});
                 onResetAllFilters();
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Сбросить введённые ({activeFilterCount})
+              {isEn
+                ? `Reset entered (${activeFilterCount})`
+                : `Сбросить введённые (${activeFilterCount})`}
             </button>
           )}
         </div>
@@ -616,8 +713,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
               <Sparkles className="h-4 w-4 text-sky-600" />
               <span>
-                Наиболее информативные признаки для разделения оставшихся видов (
-                {remainingCandidates.length}):
+                {isEn
+                  ? `Most informative traits to separate remaining species (${remainingCandidates.length}):`
+                  : `Наиболее информативные признаки для разделения оставшихся видов (${remainingCandidates.length}):`}
               </span>
             </div>
             <button
@@ -626,7 +724,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                   prev === 'best_diagnostic' ? 'matrix_order' : 'best_diagnostic'
                 )
               }
-              className={`inline-flex items-center gap-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+              className={`inline-flex items-center gap-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 sortBy === 'best_diagnostic'
                   ? 'text-sky-700 font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
@@ -634,7 +732,11 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
             >
               <ArrowUpDown className="h-3.5 w-3.5" />
               {sortBy === 'best_diagnostic'
-                ? 'Сортировка: По диагностической силе'
+                ? isEn
+                  ? 'Sorted by: Diagnostic Power'
+                  : 'Сортировка: По диагностической силе'
+                : isEn
+                ? 'Sort list by separating power'
                 : 'Сортировать список по силе разделения'}
             </button>
           </div>
@@ -642,13 +744,17 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           {remainingCandidates.length <= 1 ? (
             <p className="mt-1.5 text-xs text-emerald-700 font-medium">
               {remainingCandidates.length === 1
-                ? `Определение завершено: остался единственный вид-кандидат ${remainingCandidates[0].species.sp}.`
+                ? isEn
+                  ? `Identification complete: 1 candidate species remaining (${remainingCandidates[0].species.sp}).`
+                  : `Определение завершено: остался единственный вид-кандидат ${remainingCandidates[0].species.sp}.`
+                : isEn
+                ? 'No matching species remaining. Try relaxing or removing a conflicting trait.'
                 : 'Не осталось подходящих видов. Попробуйте ослабить или удалить конфликтующий признак.'}
             </p>
           ) : (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {bestNextTraits.map((t) => {
-                const desc = getTraitDisplayDescription(t.code, traitAnnotations);
+                const desc = getTraitDisplayDescription(t.code, traitAnnotations, lang);
                 return (
                   <button
                     key={t.code}
@@ -658,7 +764,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                       setSearchQuery(t.code);
                     }}
                     title={`${desc} (${t.code})`}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 hover:border-sky-400 hover:bg-sky-50 transition-colors max-w-full text-left"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 hover:border-sky-400 hover:bg-sky-50 transition-colors max-w-full text-left cursor-pointer"
                   >
                     <span className="font-medium text-slate-900 truncate max-w-[260px]">
                       {desc}
@@ -675,9 +781,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="text-xs text-sky-700 underline ml-2 whitespace-nowrap shrink-0"
+                  className="text-xs text-sky-700 underline ml-2 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  Показать все {traits.length} признаков
+                  {isEn ? `Show all ${traits.length} traits` : `Показать все ${traits.length} признаков`}
                 </button>
               )}
             </div>
@@ -687,21 +793,33 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
         {/* Right: Active traits quick bar */}
         <div className="rounded-xl border border-slate-200 bg-white px-5 py-3.5 lg:col-span-5">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
-            <span>Введённые пользователем признаки ({activeFilterCount}):</span>
+            <span>
+              {isEn
+                ? `Entered traits (${activeFilterCount}):`
+                : `Введённые пользователем признаки (${activeFilterCount}):`}
+            </span>
             {activeFilterCount > 0 && (
               <button
                 onClick={() =>
                   setSelectedKind((prev) => (prev === 'entered' ? 'all' : 'entered'))
                 }
-                className="text-xs font-medium text-sky-700 hover:underline whitespace-nowrap shrink-0"
+                className="text-xs font-medium text-sky-700 hover:underline whitespace-nowrap shrink-0 cursor-pointer"
               >
-                {selectedKind === 'entered' ? 'Показать все признаки' : 'Фильтр по введённым'}
+                {selectedKind === 'entered'
+                  ? isEn
+                    ? 'Show all traits'
+                    : 'Показать все признаки'
+                  : isEn
+                  ? 'Filter by entered'
+                  : 'Фильтр по введённым'}
               </button>
             )}
           </div>
           {activeFilterCount === 0 ? (
             <p className="mt-1.5 text-xs text-slate-500">
-              Щёлкните по любому признаку слева, чтобы добавить его картинку, расшифровку или комментарий, либо сразу введите наблюдаемое значение.
+              {isEn
+                ? 'Click any trait on the left to inspect or attach an illustration, or enter an observed state/value directly.'
+                : 'Щёлкните по любому признаку слева, чтобы добавить его картинку, расшифровку или комментарий, либо сразу введите наблюдаемое значение.'}
             </p>
           ) : (
             <div className="mt-2 flex flex-wrap items-center gap-1.5 max-h-16 overflow-y-auto">
@@ -714,9 +832,13 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                     f.selectedStates
                       .map((s) =>
                         f.traitCode === 'A1ser' && s === 0
-                          ? 'Гладкая (0)'
+                          ? isEn
+                            ? 'Smooth (0)'
+                            : 'Гладкая (0)'
                           : f.traitCode === 'A1ser' && s === 100
-                          ? 'Много (100)'
+                          ? isEn
+                            ? 'Many (100)'
+                            : 'Много (100)'
                           : String(s)
                       )
                       .join('|')
@@ -740,8 +862,8 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                   <button
                     key={f.traitCode}
                     onClick={() => clearSingleTrait(f.traitCode)}
-                    title="Нажмите, чтобы убрать этот признак"
-                    className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 font-mono text-xs text-white hover:bg-rose-700 transition-colors whitespace-nowrap shrink-0"
+                    title={isEn ? 'Click to remove this trait filter' : 'Нажмите, чтобы убрать этот признак'}
+                    className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 font-mono text-xs text-white hover:bg-rose-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <span>{f.traitCode}:</span>
                     <span className="font-semibold">{valStr}</span>
@@ -767,7 +889,11 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск по коду (A2g1, P4_CS_osp2, cr/cs) или расшифровке..."
+                  placeholder={
+                    isEn
+                      ? 'Search by code (A2g1, P4_CS_osp2, cr/cs) or description...'
+                      : 'Поиск по коду (A2g1, P4_CS_osp2, cr/cs) или расшифровке...'
+                  }
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-8 py-1.5 font-mono text-xs text-slate-900 focus:border-sky-600 focus:bg-white focus:outline-none"
                 />
                 {searchQuery && (
@@ -783,17 +909,34 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
                 {(
                   [
-                    { id: 'all', label: `Все (${traits.length})` },
-                    { id: 'qualitative', label: 'Качественные (0/1/2)' },
-                    { id: 'meristic', label: 'Счётные' },
-                    { id: 'morphometric', label: 'Индексы' },
-                    { id: 'entered', label: `Введённые (${activeFilterCount})` },
+                    {
+                      id: 'all',
+                      label: isEn ? `All (${traits.length})` : `Все (${traits.length})`,
+                    },
+                    {
+                      id: 'qualitative',
+                      label: isEn ? 'Qualitative (0/1/2)' : 'Качественные (0/1/2)',
+                    },
+                    {
+                      id: 'meristic',
+                      label: isEn ? 'Counts' : 'Счётные',
+                    },
+                    {
+                      id: 'morphometric',
+                      label: isEn ? 'Indices' : 'Индексы',
+                    },
+                    {
+                      id: 'entered',
+                      label: isEn
+                        ? `Entered (${activeFilterCount})`
+                        : `Введённые (${activeFilterCount})`,
+                    },
                   ] as const
                 ).map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setSelectedKind(tab.id)}
-                    className={`px-2.5 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap shrink-0 ${
+                    className={`px-2.5 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                       selectedKind === tab.id
                         ? 'bg-white text-slate-900 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
@@ -809,25 +952,25 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
             <div className="flex flex-wrap items-center gap-1">
               <button
                 onClick={() => setSelectedSection('all')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   selectedSection === 'all'
                     ? 'bg-slate-900 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Все отделы
+                {isEn ? 'All sections' : 'Все отделы'}
               </button>
               {(Object.keys(ANATOMICAL_SECTION_LABELS) as AnatomicalSection[]).map((sec) => (
                 <button
                   key={sec}
                   onClick={() => setSelectedSection(sec)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     selectedSection === sec
                       ? 'bg-slate-900 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {ANATOMICAL_SECTION_LABELS[sec].split(' (')[0]}
+                  {getAnatomicalSectionLabel(sec, lang).split(' (')[0]}
                 </button>
               ))}
             </div>
@@ -842,14 +985,18 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                   className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-700"
                 />
                 <span className="font-medium text-slate-800">
-                  Переносить неинформативные на текущем шаге признаки в самый низ списка
+                  {isEn
+                    ? 'Move non-informative traits (0% separation at current step) to the bottom of the list'
+                    : 'Переносить неинформативные на текущем шаге признаки в самый низ списка'}
                 </span>
                 <span className="font-mono text-[11px] text-slate-500">
-                  ({redundantDisplayedCount} призн.)
+                  ({redundantDisplayedCount})
                 </span>
               </label>
               <span className="text-[11px] text-slate-500">
-                Не отключаются полностью (доступны на случай находки нового вида)
+                {isEn
+                  ? 'Kept active in case of an unusual specimen or new species'
+                  : 'Не отключаются полностью (доступны на случай находки нового вида)'}
               </span>
             </div>
           </div>
@@ -858,7 +1005,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           <div className="divide-y divide-slate-200 max-h-[680px] overflow-y-auto">
             {displayedTraits.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500">
-                По вашему запросу признаки не найдены. Сбросьте фильтр поиска.
+                {isEn
+                  ? 'No traits match your search. Reset the search filter.'
+                  : 'По вашему запросу признаки не найдены. Сбросьте фильтр поиска.'}
               </div>
             ) : (
               displayedTraits.map((trait, idx) => {
@@ -878,9 +1027,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                   !prevWasRedundant;
 
                 const ann = traitAnnotations[trait.code];
-                const hasCustomDesc = Boolean(ann?.description && ann.description.trim());
+                const displayDesc = getTraitDisplayDescription(trait.code, traitAnnotations, lang);
+                const displayComment = getTraitDisplayComment(trait.code, traitAnnotations, lang);
                 const hasImage = Boolean(ann?.imageUrl);
-                const hasComment = Boolean(ann?.comment && ann.comment.trim());
 
                 // Compute summary among currently remaining candidate species
                 let candidateMin: number | null = null;
@@ -936,10 +1085,14 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                     {showRedundantDivider && (
                       <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-100 px-4 py-2 text-xs border-y border-slate-200">
                         <span className="font-semibold text-slate-700">
-                          Неинформативные на данном шаге признаки ({redundantDisplayedCount}) — не разделяют оставшихся кандидатов
+                          {isEn
+                            ? `Non-informative traits at current step (${redundantDisplayedCount}) — do not separate remaining candidates`
+                            : `Неинформативные на данном шаге признаки (${redundantDisplayedCount}) — не разделяют оставшихся кандидатов`}
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Активны для ввода (для проверки необычных особей или новых видов)
+                          {isEn
+                            ? 'Remain active for input (to verify unusual specimens or new species)'
+                            : 'Активны для ввода (для проверки необычных особей или новых видов)'}
                         </span>
                       </div>
                     )}
@@ -952,19 +1105,21 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                           : 'hover:bg-slate-50/70'
                       }`}
                     >
-                      {/* Left: Prominent Human-Language Description, Subdued Trait Code, Image/Comment Indicators & Range Metadata */}
+                      {/* Left: Prominent Description, Subdued Trait Code, Image/Comment Indicators & Range Metadata */}
                       <div className="min-w-[220px] flex-1">
                         <div className="flex items-start justify-between gap-2">
                           <button
                             type="button"
                             onClick={() => onOpenTraitInspector(trait)}
-                            className="group text-left focus:outline-none"
-                            title="Щёлкните, чтобы открыть/добавить картинку признака, расшифровку и комментарий"
+                            className="group text-left focus:outline-none cursor-pointer"
+                            title={
+                              isEn
+                                ? 'Click to open/add trait illustration, description, and notes'
+                                : 'Щёлкните, чтобы открыть/добавить картинку признака, расшифровку и комментарий'
+                            }
                           >
                             <span className="text-sm font-semibold text-slate-900 group-hover:text-sky-700 transition-colors">
-                              {hasCustomDesc
-                                ? ann.description
-                                : getDefaultPlaceholderDescription(trait.code)}
+                              {displayDesc}
                             </span>
                           </button>
                         </div>
@@ -973,8 +1128,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenTraitInspector(trait)}
-                            className="group inline-flex items-center gap-1.5 text-left focus:outline-none"
-                            title="Код признака в исходной матрице (нажмите для иллюстрации / комментария)"
+                            className="group inline-flex items-center gap-1.5 text-left focus:outline-none cursor-pointer"
                           >
                             <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-normal text-slate-400 group-hover:text-slate-700 transition-colors">
                               {trait.code}
@@ -987,45 +1141,60 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                               }`}
                             >
                               <ImageIcon className="h-3 w-3" />
-                              {hasImage ? 'Картинка' : '+ фото'}
+                              {hasImage
+                                ? isEn
+                                  ? 'Image'
+                                  : 'Картинка'
+                                : isEn
+                                ? '+ photo'
+                                : '+ фото'}
                             </span>
                           </button>
 
                           <span className="text-[11px] text-slate-400">
                             ·{' '}
                             {trait.code === 'A1ser'
-                              ? 'количеств. (число / диапазон или гладкая / много)'
+                              ? isEn
+                                ? 'quantitative (number / range or smooth / many)'
+                                : 'количеств. (число / диапазон или гладкая / много)'
                               : trait.kind === 'qualitative'
-                              ? 'качеств.'
+                              ? isEn
+                                ? 'qualitative'
+                                : 'качеств.'
                               : trait.kind === 'meristic'
-                              ? 'количеств.'
+                              ? isEn
+                                ? 'quantitative'
+                                : 'количеств.'
+                              : isEn
+                              ? 'index'
                               : 'индекс'}
                           </span>
                           {sepPower >= 40 && !isEntered && (
                             <span
                               className="font-mono text-[11px] font-medium text-emerald-700"
-                              title="Индекс разделительной способности среди оставшихся кандидатов"
+                              title={
+                                isEn
+                                  ? 'Separating power among remaining candidate species'
+                                  : 'Индекс разделительной способности среди оставшихся кандидатов'
+                              }
                             >
-                              · разд. {sepPower}%
+                              · {isEn ? 'sep.' : 'разд.'} {sepPower}%
                             </span>
                           )}
                           {isRedundant && (
-                            <span
-                              className="rounded bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
-                              title="У всех оставшихся видов-кандидатов этот признак одинаков или перекрывается, но вы всё равно можете ввести значение"
-                            >
-                              не разделяет оставшиеся
+                            <span className="rounded bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                              {isEn ? 'does not separate remaining' : 'не разделяет оставшиеся'}
                             </span>
                           )}
                         </div>
 
-                        {/* Optional comment preview if present */}
-                        {hasComment && (
+                        {/* Optional comment preview */}
+                        {displayComment && (
                           <div
                             onClick={() => onOpenTraitInspector(trait)}
                             className="mt-1 cursor-pointer text-[11px] text-slate-500"
                           >
-                            {ann.comment}
+                            {displayComment}
                           </div>
                         )}
 
@@ -1033,14 +1202,14 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                         <div className="mt-1 font-mono text-[11px] tabular-nums text-slate-400">
                           {trait.kind === 'qualitative' ? (
                             <span>
-                              Состояния:{' '}
+                              {isEn ? 'States:' : 'Состояния:'}{' '}
                               {trait.discreteStates
-                                .map((s) => formatQualitativeStateLabel(trait.code, s))
+                                .map((s) => formatQualitativeStateLabel(trait.code, s, lang))
                                 .join(' · ')}
                             </span>
                           ) : (
                             <span>
-                              Диапазон у кандидатов:{' '}
+                              {isEn ? 'Candidate range:' : 'Диапазон у кандидатов:'}{' '}
                               {candidateMin !== null && candidateMax !== null
                                 ? `${formatTraitNumber(candidateMin, trait.decimals)} – ${formatTraitNumber(
                                     candidateMax,
@@ -1050,21 +1219,22 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                                     trait.globalMax,
                                     trait.decimals
                                   )}`}{' '}
-                              (табл. min–max: {formatTraitNumber(trait.globalMin, trait.decimals)}–
+                              ({isEn ? 'raw min–max:' : 'табл. min–max:'}{' '}
+                              {formatTraitNumber(trait.globalMin, trait.decimals)}–
                               {formatTraitNumber(trait.globalMax, trait.decimals)})
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Right: Interactive Control (State Buttons for Qualitative, Hybrid for A1ser, Input for Quantitative) */}
+                      {/* Right: Interactive Control */}
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
                         {hasImage && (
                           <button
                             type="button"
                             onClick={() => onOpenTraitInspector(trait)}
-                            className="h-9 w-9 overflow-hidden rounded-lg border border-slate-200 bg-white p-0.5 hover:border-sky-500 shrink-0"
-                            title="Открыть иллюстрацию признака"
+                            className="h-9 w-9 overflow-hidden rounded-lg border border-slate-200 bg-white p-0.5 hover:border-sky-500 shrink-0 cursor-pointer"
+                            title={isEn ? 'Open trait illustration' : 'Открыть иллюстрацию признака'}
                           >
                             <img
                               src={ann.imageUrl}
@@ -1077,20 +1247,23 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
 
                         {trait.code === 'A1ser' ? (
                           <div className="flex flex-wrap items-center gap-1.5">
-                            {/* Button: Гладкая (0) */}
                             <button
                               type="button"
                               onClick={() => handleToggleQualitativeState('A1ser', 0)}
-                              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums transition-colors whitespace-nowrap shrink-0 ${
+                              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                                 activeFilter?.selectedStates?.includes(0)
                                   ? 'border-sky-700 bg-sky-700 text-white shadow-xs'
                                   : a1serSmoothCount > 0
                                   ? 'border-slate-300 bg-white text-slate-900 hover:border-sky-500 hover:bg-sky-50'
                                   : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300'
                               }`}
-                              title="Гиалиновая пластинка гладкая (без зубцов, значение 0)"
+                              title={
+                                isEn
+                                  ? 'Hyaline membrane is smooth (without denticles, value 0)'
+                                  : 'Гиалиновая пластинка гладкая (без зубцов, значение 0)'
+                              }
                             >
-                              <span>Гладкая (0)</span>
+                              <span>{isEn ? 'Smooth (0)' : 'Гладкая (0)'}</span>
                               <span
                                 className={`text-[10px] font-normal ${
                                   activeFilter?.selectedStates?.includes(0)
@@ -1102,20 +1275,23 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                               </span>
                             </button>
 
-                            {/* Button: Много (100) */}
                             <button
                               type="button"
                               onClick={() => handleToggleQualitativeState('A1ser', 100)}
-                              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums transition-colors whitespace-nowrap shrink-0 ${
+                              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                                 activeFilter?.selectedStates?.includes(100)
                                   ? 'border-sky-700 bg-sky-700 text-white shadow-xs'
                                   : a1serManyCount > 0
                                   ? 'border-slate-300 bg-white text-slate-900 hover:border-sky-500 hover:bg-sky-50'
                                   : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300'
                               }`}
-                              title="Серра очень мелкая, зубцы не поддаются прямому счёту (условное значение 100)"
+                              title={
+                                isEn
+                                  ? 'Serra is very fine, denticles are too small to count directly (coded as 100)'
+                                  : 'Серра очень мелкая, зубцы не поддаются прямому счёту (условное значение 100)'
+                              }
                             >
-                              <span>Много (100)</span>
+                              <span>{isEn ? 'Many (100)' : 'Много (100)'}</span>
                               <span
                                 className={`text-[10px] font-normal ${
                                   activeFilter?.selectedStates?.includes(100)
@@ -1127,14 +1303,17 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                               </span>
                             </button>
 
-                            {/* Numeric / Range Input for countable teeth */}
                             <input
                               type="text"
                               inputMode="text"
                               value={draftVal}
                               onChange={(e) => handleQuantitativeChange('A1ser', e.target.value)}
-                              placeholder="число или 12-18"
-                              title="Введите точное число зубцов (например, 14) или диапазон через дефис (например, 12-18)"
+                              placeholder={isEn ? 'count or 12-18' : 'число или 12-18'}
+                              title={
+                                isEn
+                                  ? 'Enter exact denticle count (e.g. 14) or a hyphenated range (e.g. 12-18)'
+                                  : 'Введите точное число зубцов (например, 14) или диапазон через дефис (например, 12-18)'
+                              }
                               className={`w-32 rounded-lg border px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums focus:outline-none ${
                                 draftVal.trim() !== ''
                                   ? 'border-sky-600 bg-white text-sky-950 ring-2 ring-sky-500/20'
@@ -1149,23 +1328,28 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                                 activeFilter?.selectedStates?.includes(stateVal)
                               );
                               const matchingCands = stateCandidateCounts[stateVal] || 0;
-                              const stateWord = QUALITATIVE_STATE_LABELS[trait.code]?.[stateVal];
+                              const stateWord = getQualitativeStateMeaning(
+                                trait.code,
+                                stateVal,
+                                lang
+                              );
 
                               return (
                                 <button
                                   key={stateVal}
                                   onClick={() => handleToggleQualitativeState(trait.code, stateVal)}
-                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold tabular-nums transition-colors whitespace-nowrap shrink-0 ${
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold tabular-nums transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                                     isSelected
                                       ? 'border-sky-700 bg-sky-700 text-white shadow-xs'
                                       : matchingCands > 0
                                       ? 'border-slate-300 bg-white text-slate-900 hover:border-sky-500 hover:bg-sky-50'
                                       : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300'
                                   }`}
-                                  title={`Выбрать состояние ${formatQualitativeStateLabel(
+                                  title={`${formatQualitativeStateLabel(
                                     trait.code,
-                                    stateVal
-                                  )}. Подходит видам-кандидатам: ${matchingCands}`}
+                                    stateVal,
+                                    lang
+                                  )} (${matchingCands})`}
                                 >
                                   <span className="font-mono">{stateVal}</span>
                                   {stateWord && (
@@ -1179,11 +1363,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                                   )}
                                   <span
                                     className={`font-mono text-[10px] font-normal ${
-                                      isSelected
-                                        ? 'text-sky-100'
-                                        : matchingCands > 0
-                                        ? 'text-slate-400'
-                                        : 'text-slate-400'
+                                      isSelected ? 'text-sky-100' : 'text-slate-400'
                                     }`}
                                   >
                                     ({matchingCands})
@@ -1193,37 +1373,41 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             })}
                           </div>
                         ) : (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={draftVal}
-                            onChange={(e) => handleQuantitativeChange(trait.code, e.target.value)}
-                            placeholder={`${formatTraitNumber(
-                              trait.globalMin,
-                              trait.decimals
-                            )} .. ${formatTraitNumber(trait.globalMax, trait.decimals)}`}
-                            title="Можно ввести одно число (среднее между левой и правой стороной) или диапазон через дефис"
-                            className={`w-36 rounded-lg border px-3 py-1.5 font-mono text-xs font-semibold tabular-nums focus:outline-none ${
-                              isEntered
-                                ? 'border-sky-600 bg-white text-sky-950 ring-2 ring-sky-500/20'
-                                : 'border-slate-300 bg-white text-slate-900 focus:border-sky-600'
-                            }`}
-                          />
-                        </div>
-                      )}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={draftVal}
+                              onChange={(e) => handleQuantitativeChange(trait.code, e.target.value)}
+                              placeholder={`${formatTraitNumber(
+                                trait.globalMin,
+                                trait.decimals
+                              )} .. ${formatTraitNumber(trait.globalMax, trait.decimals)}`}
+                              title={
+                                isEn
+                                  ? 'Enter a single number (mean of left & right sides) or a range with a hyphen'
+                                  : 'Можно ввести одно число (среднее между левой и правой стороной) или диапазон через дефис'
+                              }
+                              className={`w-36 rounded-lg border px-3 py-1.5 font-mono text-xs font-semibold tabular-nums focus:outline-none ${
+                                isEntered
+                                  ? 'border-sky-600 bg-white text-sky-950 ring-2 ring-sky-500/20'
+                                  : 'border-slate-300 bg-white text-slate-900 focus:border-sky-600'
+                              }`}
+                            />
+                          </div>
+                        )}
 
-                      {isEntered && (
-                        <button
-                          onClick={() => clearSingleTrait(trait.code)}
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
-                          title="Сбросить признак"
-                        >
-                          ✕
-                        </button>
-                      )}
+                        {isEntered && (
+                          <button
+                            onClick={() => clearSingleTrait(trait.code)}
+                            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
+                            title={isEn ? 'Clear trait' : 'Сбросить признак'}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
                   </React.Fragment>
                 );
               })
@@ -1239,51 +1423,59 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
                 <button
                   onClick={() => setRightPanelTab('candidates')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     rightPanelTab === 'candidates'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Кандидаты ({remainingCandidates.length})
+                  {isEn
+                    ? `Candidates (${remainingCandidates.length})`
+                    : `Кандидаты (${remainingCandidates.length})`}
                 </button>
                 <button
                   onClick={() => setRightPanelTab('discarded')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     rightPanelTab === 'discarded'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Отсеянные ({discardedEvaluations.length})
+                  {isEn
+                    ? `Eliminated (${discardedEvaluations.length})`
+                    : `Отсеянные (${discardedEvaluations.length})`}
                 </button>
               </div>
 
               {remainingCandidates.length >= 2 && (
                 <button
                   onClick={onOpenDifferentialCompare}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <Layers className="h-3.5 w-3.5 text-sky-700" />
-                  Сравнить ({remainingCandidates.length})
+                  {isEn
+                    ? `Compare (${remainingCandidates.length})`
+                    : `Сравнить (${remainingCandidates.length})`}
                 </button>
               )}
             </div>
 
             {/* Color Legend for Taxonomic Status */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600">
-              <span className="font-medium text-slate-500">Статус видов:</span>
+              <span className="font-medium text-slate-500">
+                {isEn ? 'Species status:' : 'Статус видов:'}
+              </span>
               <span className="inline-flex items-center gap-1.5 font-medium text-emerald-900">
                 <span className="h-2.5 w-2.5 rounded-xs bg-emerald-600 inline-block" />
-                Валидные (valid)
+                {isEn ? 'Valid (valid)' : 'Валидные (valid)'}
               </span>
               <span className="inline-flex items-center gap-1.5 font-medium text-sky-900">
                 <span className="h-2.5 w-2.5 rounded-xs bg-sky-600 inline-block" />
-                Кандидаты (n. sp.)
+                {isEn ? 'Candidate (n. sp.)' : 'Кандидаты (n. sp.)'}
               </span>
               <span className="inline-flex items-center gap-1.5 font-medium text-amber-900">
                 <span className="h-2.5 w-2.5 rounded-xs bg-amber-500 inline-block" />
-                Сомнительные (?)
+                {isEn ? 'Doubtful (?)' : 'Сомнительные (?)'}
               </span>
             </div>
           </div>
@@ -1294,7 +1486,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold text-emerald-800">
-                    Вид определён (остался 1 кандидат):
+                    {isEn
+                      ? 'Species identified (1 candidate remaining):'
+                      : 'Вид определён (остался 1 кандидат):'}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-2">
                     <span className="text-base font-bold italic text-emerald-950">
@@ -1316,9 +1510,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                       remainingCandidates[0]
                     )
                   }
-                  className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800 transition-colors whitespace-nowrap shrink-0"
+                  className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  Профиль вида
+                  {isEn ? 'Species Profile' : 'Профиль вида'}
                 </button>
               </div>
             </div>
@@ -1330,16 +1524,20 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               remainingCandidates.length === 0 ? (
                 <div className="p-8 text-center space-y-3">
                   <div className="text-sm font-semibold text-slate-800">
-                    Ни один вид не подошёл под все {activeFilterCount} признаков одновременно
+                    {isEn
+                      ? `No species matched all ${activeFilterCount} traits simultaneously`
+                      : `Ни один вид не подошёл под все ${activeFilterCount} признаков одновременно`}
                   </div>
                   <p className="text-xs text-slate-600">
-                    Переключитесь на вкладку «Отсеянные ({discardedEvaluations.length})», чтобы увидеть виды с 1 расхождением, или увеличьте коэффициент допуска σ.
+                    {isEn
+                      ? `Switch to the “Eliminated (${discardedEvaluations.length})” tab to inspect species with 1 mismatch, or increase the σ tolerance slider.`
+                      : `Переключитесь на вкладку «Отсеянные (${discardedEvaluations.length})», чтобы увидеть виды с 1 расхождением, или увеличьте коэффициент допуска σ.`}
                   </p>
                   <button
                     onClick={() => setRightPanelTab('discarded')}
-                    className="rounded-lg bg-sky-700 px-4 py-2 text-xs font-medium text-white hover:bg-sky-800 transition-colors"
+                    className="rounded-lg bg-sky-700 px-4 py-2 text-xs font-medium text-white hover:bg-sky-800 transition-colors cursor-pointer"
                   >
-                    Показать ближайшие отсеянные виды
+                    {isEn ? 'Show closest eliminated species' : 'Показать ближайшие отсеянные виды'}
                   </button>
                 </div>
               ) : (
@@ -1361,7 +1559,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               onClick={() => onSelectSpeciesDetail(species, item)}
-                              className={`text-sm font-bold italic text-left transition-colors ${taxonStyle.nameColor}`}
+                              className={`text-sm font-bold italic text-left transition-colors cursor-pointer ${taxonStyle.nameColor}`}
                             >
                               {species.sp}
                             </button>
@@ -1371,7 +1569,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                               {taxonStyle.badgeLabel}
                             </span>
                             <span className="font-mono text-xs tabular-nums text-slate-500">
-                              · n={species.specimenCount} · гр. {species.group}
+                              · n={species.specimenCount} · {isEn ? 'gr.' : 'гр.'} {species.group}
                             </span>
                           </div>
 
@@ -1380,14 +1578,16 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                               {!hasExtrapolated ? (
                                 <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
                                   <CheckCircle2 className="h-3.5 w-3.5" />
-                                  Точное попадание в табличный диапазон ({item.exactMatchesCount} из{' '}
-                                  {activeFilterCount})
+                                  {isEn
+                                    ? `Exact match within observed range (${item.exactMatchesCount} of ${activeFilterCount})`
+                                    : `Точное попадание в табличный диапазон (${item.exactMatchesCount} из ${activeFilterCount})`}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 font-medium text-amber-700">
                                   <AlertTriangle className="h-3.5 w-3.5" />
-                                  С учётом поправки на малую выборку (n={species.specimenCount}) по{' '}
-                                  {item.extrapolatedMatchesCount} призн.
+                                  {isEn
+                                    ? `Matched via small-sample tolerance (n=${species.specimenCount}) on ${item.extrapolatedMatchesCount} trait(s)`
+                                    : `С учётом поправки на малую выборку (n=${species.specimenCount}) по ${item.extrapolatedMatchesCount} призн.`}
                                 </span>
                               )}
                             </div>
@@ -1397,8 +1597,10 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             <div className="mt-1.5 space-y-1 text-[11px] font-mono text-amber-900 bg-amber-50/70 rounded px-2.5 py-1.5 border border-amber-200/70">
                               {extrapolatedDetails.map((d) => (
                                 <div key={d.traitCode}>
-                                  <strong>{d.traitCode}</strong>: введено {d.userInputSummary} · в таблице{' '}
-                                  {d.speciesRawSummary} → с поправкой [{d.speciesExtrapolatedSummary}]
+                                  <strong>{d.traitCode}</strong>:{' '}
+                                  {isEn ? 'entered' : 'введено'} {d.userInputSummary} ·{' '}
+                                  {isEn ? 'raw' : 'в таблице'} {d.speciesRawSummary} →{' '}
+                                  {isEn ? 'adjusted' : 'с поправкой'} [{d.speciesExtrapolatedSummary}]
                                 </div>
                               ))}
                             </div>
@@ -1417,10 +1619,10 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
 
                         <button
                           onClick={() => onSelectSpeciesDetail(species, item)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                         >
                           <Eye className="h-3.5 w-3.5" />
-                          Детали
+                          {isEn ? 'Details' : 'Детали'}
                         </button>
                       </div>
                     </div>
@@ -1429,7 +1631,9 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
               )
             ) : discardedEvaluations.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500">
-                Пока ни один вид не отсеян. Введите значения наблюдаемых признаков слева.
+                {isEn
+                  ? 'No species eliminated yet. Enter observed trait states/values on the left.'
+                  : 'Пока ни один вид не отсеян. Введите значения наблюдаемых признаков слева.'}
               </div>
             ) : (
               discardedEvaluations.map((item) => {
@@ -1445,7 +1649,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => onSelectSpeciesDetail(species, item)}
-                            className={`text-sm font-bold italic text-left ${taxonStyle.nameColor}`}
+                            className={`text-sm font-bold italic text-left cursor-pointer ${taxonStyle.nameColor}`}
                           >
                             {species.sp}
                           </button>
@@ -1455,15 +1659,20 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             {taxonStyle.badgeLabel}
                           </span>
                           <span className="font-mono text-xs tabular-nums text-slate-400">
-                            · n={species.specimenCount} · гр. {species.group}
+                            · n={species.specimenCount} · {isEn ? 'gr.' : 'гр.'} {species.group}
                           </span>
                         </div>
 
                         <div className="mt-1 text-xs font-medium text-rose-700 flex items-center gap-1">
                           <XCircle className="h-3.5 w-3.5 shrink-0" />
                           <span>
-                            Отсеян по {mismatchReasons.length}{' '}
-                            {mismatchReasons.length === 1 ? 'признаку' : 'признакам'}:
+                            {isEn
+                              ? `Eliminated by ${mismatchReasons.length} ${
+                                  mismatchReasons.length === 1 ? 'trait' : 'traits'
+                                }:`
+                              : `Отсеян по ${mismatchReasons.length} ${
+                                  mismatchReasons.length === 1 ? 'признаку' : 'признакам'
+                                }:`}
                           </span>
                         </div>
 
@@ -1473,13 +1682,14 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                               key={m.traitCode}
                               className="rounded border border-rose-200/80 bg-rose-50/50 px-2.5 py-1"
                             >
-                              <span className="font-semibold text-rose-950">{m.traitCode}</span>: введено{' '}
+                              <span className="font-semibold text-rose-950">{m.traitCode}</span>:{' '}
+                              {isEn ? 'entered' : 'введено'}{' '}
                               <span className="font-semibold text-rose-800">
                                 {m.userInputSummary}
                               </span>{' '}
-                              (у вида табл.: {m.speciesRawSummary}
+                              ({isEn ? 'species raw:' : 'у вида табл.:'} {m.speciesRawSummary}
                               {m.speciesExtrapolatedSummary !== m.speciesRawSummary
-                                ? `, допуск: ${m.speciesExtrapolatedSummary}`
+                                ? `, ${isEn ? 'tol.:' : 'допуск:'} ${m.speciesExtrapolatedSummary}`
                                 : ''}
                               )
                             </div>
@@ -1489,10 +1699,10 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
 
                       <button
                         onClick={() => onSelectSpeciesDetail(species, item)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                       >
                         <Eye className="h-3.5 w-3.5" />
-                        Детали
+                        {isEn ? 'Details' : 'Детали'}
                       </button>
                     </div>
                   </div>

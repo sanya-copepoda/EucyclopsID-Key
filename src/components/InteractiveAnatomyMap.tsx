@@ -1,10 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Sparkles,
   Image as ImageIcon,
   RotateCcw,
-  CheckCircle2,
-  Eye,
   Filter,
 } from 'lucide-react';
 import {
@@ -15,10 +12,11 @@ import {
 } from '../types/taxonomy';
 import { formatTraitNumber } from '../utils/matrixEngine';
 import {
-  formatQualitativeStateLabel,
+  getQualitativeStateMeaning,
+  getTraitDisplayComment,
   getTraitDisplayDescription,
-  QUALITATIVE_STATE_LABELS,
 } from '../utils/traitAnnotationStore';
+import { Language, useLanguage } from '../utils/i18n';
 
 export type AnatomyPartId =
   | 'A1'
@@ -40,10 +38,14 @@ export type AnatomyPartId =
 
 interface AnatomyPartMeta {
   id: AnatomyPartId;
-  shortLabel: string;
-  title: string;
-  bodyDivision: 'Просома (Цефалоторакс)' | 'Просома (Торакс)' | 'Уросома';
-  description: string;
+  shortLabelEn: string;
+  shortLabelRu: string;
+  titleEn: string;
+  titleRu: string;
+  bodyDivisionEn: string;
+  bodyDivisionRu: string;
+  descriptionEn: string;
+  descriptionRu: string;
   sectionToFilter: AnatomicalSection | 'all';
   traitCodes: string[];
 }
@@ -51,70 +53,105 @@ interface AnatomyPartMeta {
 export const ANATOMY_PARTS: Record<AnatomyPartId, AnatomyPartMeta> = {
   A1: {
     id: 'A1',
-    shortLabel: 'A1',
-    title: 'Антеннулы (A1) — дистальный сегмент',
-    bodyDivision: 'Просома (Цефалоторакс)',
-    description:
+    shortLabelEn: 'A1',
+    shortLabelRu: 'A1',
+    titleEn: 'Antennules (A1) — Distal Segment',
+    titleRu: 'Антеннулы (A1) — дистальный сегмент',
+    bodyDivisionEn: 'Prosoma (Cephalothorax)',
+    bodyDivisionRu: 'Просома (Цефалоторакс)',
+    descriptionEn:
+      'First pair of antennae (12-segmented in females). The key evaluates the structure and number of denticles on the hyaline membrane (serra) on the proximal part of the distal segment.',
+    descriptionRu:
       'Первая пара антенн (12-члениковые у самок). В ключе учитывается строение и число зубцов гиалиновой пластинки (серры) в проксимальной части дистального сегмента.',
     sectionToFilter: 'A1_Mx1',
     traitCodes: ['A1ser'],
   },
   A2: {
     id: 'A2',
-    shortLabel: 'A2',
-    title: 'Антенны (A2) — коксобазис и Enp1',
-    bodyDivision: 'Просома (Цефалоторакс)',
-    description:
+    shortLabelEn: 'A2',
+    shortLabelRu: 'A2',
+    titleEn: 'Antennae (A2) — Coxobasis & Enp1',
+    titleRu: 'Антенны (A2) — коксобазис и Enp1',
+    bodyDivisionEn: 'Prosoma (Cephalothorax)',
+    bodyDivisionRu: 'Просома (Цефалоторакс)',
+    descriptionEn:
+      'Second pair of antennae. One of the most important taxonomic complexes in Eucyclops: spinule groups (g1, g2, g3, g8, g9) on the frontal and caudal surfaces of the coxobasis and on the first endopodal segment (Enp1).',
+    descriptionRu:
       'Вторая пара антенн. Один из важнейших таксономических комплексов рода Eucyclops: микровооружение (группы шипиков g1, g2, g3, g8, g9) на фронтальной и каудальной сторонах коксобазиса и на первом членике эндоподита (Enp1).',
     sectionToFilter: 'A2',
     traitCodes: ['A2g1', 'A2g2', 'A2g3', 'A2g8', 'A2g9', 'A2N1g', 'A2N1g2'],
   },
   Mx1: {
     id: 'Mx1',
-    shortLabel: 'Mx1 (Md–Mxp)',
-    title: 'Максиллула (Mx1) и ротовой комплекс',
-    bodyDivision: 'Просома (Цефалоторакс)',
-    description:
+    shortLabelEn: 'Mx1 (Md–Mxp)',
+    shortLabelRu: 'Mx1 (Md–Mxp)',
+    titleEn: 'Maxillule (Mx1) & Mouthparts',
+    titleRu: 'Максиллула (Mx1) и ротовой комплекс',
+    bodyDivisionEn: 'Prosoma (Cephalothorax)',
+    bodyDivisionRu: 'Просома (Цефалоторакс)',
+    descriptionEn:
+      'Oral appendages of the cephalothorax (mandible Md, maxillule Mx1, maxilla Mx2, maxilliped Mxp). The key uses the presence of a group of spinules on the maxillular basis (Mx1Bsr).',
+    descriptionRu:
       'Ротовые конечности цефалоторакса (мандибула Md, максиллула Mx1, максилла Mx2, максиллипед Mxp). В определителе используется наличие группы шипиков на базисе максиллулы (Mx1Bsr).',
     sectionToFilter: 'A1_Mx1',
     traitCodes: ['Mx1Bsr'],
   },
   P1: {
     id: 'P1',
-    shortLabel: 'P1',
-    title: 'Первая пара плавательных ног (P1)',
-    bodyDivision: 'Просома (Цефалоторакс)',
-    description:
+    shortLabelEn: 'P1',
+    shortLabelRu: 'P1',
+    titleEn: 'First Swimming Legs (P1)',
+    titleRu: 'Первая пара плавательных ног (P1)',
+    bodyDivisionEn: 'Prosoma (Cephalothorax)',
+    bodyDivisionRu: 'Просома (Цефалоторакс)',
+    descriptionEn:
+      'Located at the posterior part of the cephalothorax. Evaluates the presence of setules on the outer side of the first and second exopodal segments (P1 Exp1 and P1 Exp2).',
+    descriptionRu:
       'Расположена в задней части цефалоторакса. Учитывается наличие сетул на внешней стороне первого и второго члеников экзоподита (P1 Exp1 и P1 Exp2).',
     sectionToFilter: 'P1_P3',
     traitCodes: ['P1X1os', 'P1X2os'],
   },
   P2: {
     id: 'P2',
-    shortLabel: 'P2',
-    title: 'Вторая пара плавательных ног (P2) и II торакальный сомит',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P2',
+    shortLabelRu: 'P2',
+    titleEn: 'Second Swimming Legs (P2) & Thoracic Somite II',
+    titleRu: 'Вторая пара плавательных ног (P2) и II торакальный сомит',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'Evaluates whether the proximal spine on P2 Exp3 is twice as short as the next one, the total number of naked spines on Exp2–Exp3, and setules on the outer margin of Exp1–Exp2.',
+    descriptionRu:
       'Учитывается относительная длина проксимального шипа на P2 Exp3, число голых шипов на Exp2–Exp3 и сетулы на внешнем крае Exp1–Exp2.',
     sectionToFilter: 'P1_P3',
     traitCodes: ['P2X3_bsp', 'P23_nak_sp', 'P2X1os', 'P2X2os'],
   },
   P3: {
     id: 'P3',
-    shortLabel: 'P3',
-    title: 'Третья пара плавательных ног (P3) и III торакальный сомит',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P3',
+    shortLabelRu: 'P3',
+    titleEn: 'Third Swimming Legs (P3) & Thoracic Somite III',
+    titleRu: 'Третья пара плавательных ног (P3) и III торакальный сомит',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'Evaluates setules on the outer side of the first and second exopodal segments (P3 Exp1 and P3 Exp2), as well as the total number of naked spines.',
+    descriptionRu:
       'Учитываются сетулы на внешней стороне первого и второго члеников экзоподита (P3 Exp1 и P3 Exp2), а также общее число голых шипов.',
     sectionToFilter: 'P1_P3',
     traitCodes: ['P3X1os', 'P3X2os', 'P23_nak_sp'],
   },
   P4: {
     id: 'P4',
-    shortLabel: 'P4 (вся ножка)',
-    title: 'Четвёртая пара ног (P4): IcS, Cox, Bas, Enp1–3, Exp1–3 и индексы',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P4 (whole leg)',
+    shortLabelRu: 'P4 (вся ножка)',
+    titleEn: 'Fourth Swimming Legs (P4): IcS, Cox, Bas, Enp1–3, Exp1–3 & Indices',
+    titleRu: 'Четвёртая пара ног (P4): IcS, Cox, Bas, Enp1–3, Exp1–3 и индексы',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'Primary appendage for Eucyclops species diagnosis (mounted posterior/caudal side up). Click individual P4 elements on the diagram (IcS, Cox, Bas, En1–3, Ex1–3) or select a sub-segment below.',
+    descriptionRu:
       'Ключевая конечность для диагностики видов Eucyclops (препарируется каудальной стороной вверх). Нажмите на отдельные элементы P4 на схеме (IcS, Cox, Bas, En1–3, Ex1–3) или выберите подуровень ниже.',
     sectionToFilter: 'P4',
     traitCodes: [
@@ -152,50 +189,75 @@ export const ANATOMY_PARTS: Record<AnatomyPartId, AnatomyPartMeta> = {
   },
   P4_IcS: {
     id: 'P4_IcS',
-    shortLabel: 'P4: IcS (склерит)',
-    title: 'Интеркоксальный склерит P4 (IcS)',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P4: IcS (sclerite)',
+    shortLabelRu: 'P4: IcS (склерит)',
+    titleEn: 'Intercoxal Sclerite of P4 (IcS)',
+    titleRu: 'Интеркоксальный склерит P4 (IcS)',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'Intercoxal plate of P4. Evaluates the length of setules/spinules in the distal row (row I), presence of spinules in its middle third, and the total number of spinules.',
+    descriptionRu:
       'Межкоксальная пластинка P4. Оценивается длина волосков/шипиков дистального ряда (I ряд), наличие элементов в его средней трети и общее число шипиков.',
     sectionToFilter: 'P4',
     traitCodes: ['P4IS_dr', 'P4IS_dr2', 'P4IS_drn'],
   },
   P4_Cox: {
     id: 'P4_Cox',
-    shortLabel: 'P4: Cox (кокса)',
-    title: 'Кокса P4 (Cox) и коксальная щетинка',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P4: Cox (coxa)',
+    shortLabelRu: 'P4: Cox (кокса)',
+    titleEn: 'Coxa of P4 (Cox) & Coxal Seta',
+    titleRu: 'Кокса P4 (Cox) и коксальная щетинка',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'P4 coxa and its inner coxal seta. Evaluates spinule group N1+N2, presence of a gap in the setulation on the outer side of the coxal seta, number of outer spinules/setules, and setules at its base.',
+    descriptionRu:
       'Коксоподит P4 и его внутренняя щетинка. Оценивается группа шипиков N1–N2, наличие разрыва (gap) в опушении коксальной щетинки, число внешних элементов и пучок сетул у основания.',
     sectionToFilter: 'P4',
     traitCodes: ['P4C_N', 'P4_CS_osp', 'P4_CS_osp2', 'P4_CS_osp3'],
   },
   P4_Bas: {
     id: 'P4_Bas',
-    shortLabel: 'P4: Bas (базис)',
-    title: 'Базис P4 (Bas)',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P4: Bas (basis)',
+    shortLabelRu: 'P4: Bas (базис)',
+    titleEn: 'Basis of P4 (Bas)',
+    titleRu: 'Базис P4 (Bas)',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'P4 basis. Evaluates the number of spinules on the caudal side of the basis near the base of the exopodite.',
+    descriptionRu:
       'Базиподит P4. Учитывается число шипиков на каудальной стороне базиса возле основания экзоподита.',
     sectionToFilter: 'P4',
     traitCodes: ['P4_B_sp'],
   },
   P4_Enp: {
     id: 'P4_Enp',
-    shortLabel: 'P4: En1–En3 (эндоподит)',
-    title: 'Эндоподит P4 (En1, En2, En3) и его морфометрические индексы',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P4: En1–En3 (endopod)',
+    shortLabelRu: 'P4: En1–En3 (эндоподит)',
+    titleEn: 'Endopodite of P4 (En1, En2, En3) & Morphometric Indices',
+    titleRu: 'Эндоподит P4 (En1, En2, En3) и его морфометрические индексы',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'Inner 3-segmented ramus of P4. Evaluates posterior spinules on Enp1 and Enp2, width ratio Enp2/Enp3, and indices of the distal segment Enp3 (n/ns, no/n, nai/nao, nai/n, x/n).',
+    descriptionRu:
       'Внутренняя 3-члениковая ветвь P4. Учитываются задние шипики на Enp1 и Enp2, отношение ширины Enp2/Enp3 и индексы дистального членика Enp3 (n/ns, no/n, nai/nao, nai/n, x/n).',
     sectionToFilter: 'P4',
     traitCodes: ['P4N1cs', 'P4N2cs', 'P4N2/N3', 'n/ns', 'no/n', 'nai/nao', 'nai/n', 'x/n'],
   },
   P4_Exp: {
     id: 'P4_Exp',
-    shortLabel: 'P4: Ex1–Ex3 (экзоподит)',
-    title: 'Экзоподит P4 (Ex1, Ex2, Ex3) и его морфометрические индексы',
-    bodyDivision: 'Просома (Торакс)',
-    description:
+    shortLabelEn: 'P4: Ex1–Ex3 (exopod)',
+    shortLabelRu: 'P4: Ex1–Ex3 (экзоподит)',
+    titleEn: 'Exopodite of P4 (Ex1, Ex2, Ex3) & Morphometric Indices',
+    titleRu: 'Экзоподит P4 (Ex1, Ex2, Ex3) и его морфометрические индексы',
+    bodyDivisionEn: 'Prosoma (Thorax)',
+    bodyDivisionRu: 'Просома (Торакс)',
+    descriptionEn:
+      'Outer 3-segmented ramus of P4. Evaluates setules and spinules on Exp1–Exp3, basal pore on Exp3, structure of the apical and inner setae of Exp3, and indices xa/x, xas/x, xas/xa, x/n.',
+    descriptionRu:
       'Внешняя 3-члениковая ветвь P4. Учитываются сетулы и шипики на Exp1–Exp3, базальная пора Exp3, форма апикальной и внутренних щетинок Exp3, а также индексы xa/x, xas/x, xas/xa, x/n.',
     sectionToFilter: 'P4',
     traitCodes: [
@@ -218,40 +280,60 @@ export const ANATOMY_PARTS: Record<AnatomyPartId, AnatomyPartMeta> = {
   },
   P5: {
     id: 'P5',
-    shortLabel: 'P5 и V сомит',
-    title: 'Пятый торакальный сомит (T5) и рудиментарная ножка P5',
-    bodyDivision: 'Уросома',
-    description:
+    shortLabelEn: 'P5 & Somite V',
+    shortLabelRu: 'P5 и V сомит',
+    titleEn: 'Fifth Thoracic Somite (T5) & Rudimentary Leg P5',
+    titleRu: 'Пятый торакальный сомит (T5) и рудиментарная ножка P5',
+    bodyDivisionEn: 'Urosoma',
+    bodyDivisionRu: 'Уросома',
+    descriptionEn:
+      'Detached together with the abdomen (urosoma) during dissection. Characters of P5 are excluded from the active key matrix by the author due to high variability and low diagnostic reliability.',
+    descriptionRu:
       'При препарировании отделяется вместе с абдоменом (уросомой). Признаки вооружения P5 исключены из расчётной матрицы ключа по решению автора из-за низкой диагностической надёжности.',
     sectionToFilter: 'Somites',
     traitCodes: [],
   },
   GS: {
     id: 'GS',
-    shortLabel: 'Генитальный сомит (и P6)',
-    title: 'Генитальный двусомит и рудименты P6',
-    bodyDivision: 'Уросома',
-    description:
+    shortLabelEn: 'Genital Somite (& P6)',
+    shortLabelRu: 'Генитальный сомит (и P6)',
+    titleEn: 'Genital Double-Somite & P6 Rudiments',
+    titleRu: 'Генитальный двусомит и рудименты P6',
+    bodyDivisionEn: 'Urosoma',
+    bodyDivisionRu: 'Уросома',
+    descriptionEn:
+      'Large anterior segment of the female abdomen (formed by fusion of the last thoracic and first abdominal somites). The key evaluates the presence of the medial dorsal pore (GS_m pore).',
+    descriptionRu:
       'Передний крупный сегмент абдомена самки (образуется слиянием последнего торакального и первого абдоминального сегментов). В ключе учитывается наличие медиальной поры (GS_m pore).',
     sectionToFilter: 'Somites',
     traitCodes: ['GS_m pore'],
   },
   AnS: {
     id: 'AnS',
-    shortLabel: 'Анальный сомит',
-    title: 'Абдоминальные и анальный сомит (включая проктодеум)',
-    bodyDivision: 'Уросома',
-    description:
+    shortLabelEn: 'Anal Somite',
+    shortLabelRu: 'Анальный сомит',
+    titleEn: 'Abdominal & Anal Somites (Including Proctodeum)',
+    titleRu: 'Абдоминальные и анальный сомит (включая проктодеум)',
+    bodyDivisionEn: 'Urosoma',
+    bodyDivisionRu: 'Уросома',
+    descriptionEn:
+      'Posterior somite of the urosoma preceding the caudal rami. Evaluates the ornamentation of the proctodeum (first and second rows of setules/spinules) and small dorsal spinules on the anal somite.',
+    descriptionRu:
       'Задний сомит уросомы перед каудальными ветвями. Оценивается вооружение проктодеума (первый и второй ряд волосков/шипиков) и мелкие дорсальные шипики у основания фурки.',
     sectionToFilter: 'Somites',
     traitCodes: ['Proct', 'Proct2', 'AnS_dsp'],
   },
   CR: {
     id: 'CR',
-    shortLabel: 'Каудальные ветви',
-    title: 'Каудальные ветви (Фурка), щетинки sIII–sVI, серра и индексы',
-    bodyDivision: 'Уросома',
-    description:
+    shortLabelEn: 'Caudal Rami',
+    shortLabelRu: 'Каудальные ветви',
+    titleEn: 'Caudal Rami (Furca), Setae sIII–sVI, Serra & Indices',
+    titleRu: 'Каудальные ветви (Фурка), щетинки sIII–sVI, серра и индексы',
+    bodyDivisionEn: 'Urosoma',
+    bodyDivisionRu: 'Уросома',
+    descriptionEn:
+      'Paired caudal rami at the posterior end of the urosoma. Includes the dorsal pore (CRdp), number of spinules in the lateral serra (Crser), ornamentation of setae sIII, sIV, sV, sVI, and 5 key morphometric indices (cr/cs, crr/cr, cri/cro, cri/cr, cro/cs).',
+    descriptionRu:
       'Парные ветви фурки на конце уросомы. Включают дорсальную пору (CRdp), число шипиков латеральной серры (Crser), микровооружение щетинок sIII, sIV, sV, sVI и 5 важнейших морфометрических индексов (cr/cs, crr/cr, cri/cro, cri/cr, cro/cs).',
     sectionToFilter: 'CR_Setae',
     traitCodes: [
@@ -275,6 +357,10 @@ export const ANATOMY_PARTS: Record<AnatomyPartId, AnatomyPartMeta> = {
     ],
   },
 };
+
+function getPartShortLabel(meta: AnatomyPartMeta, lang: Language): string {
+  return lang === 'en' ? meta.shortLabelEn : meta.shortLabelRu;
+}
 
 interface InteractiveAnatomyMapProps {
   traits: TraitDefinition[];
@@ -302,6 +388,9 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
   onOpenTraitInspector,
   onFilterMainListBySection,
 }) => {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [selectedPart, setSelectedPart] = useState<AnatomyPartId>('P4');
   const [hoveredPart, setHoveredPart] = useState<AnatomyPartId | null>(null);
 
@@ -344,31 +433,24 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
     return false;
   };
 
-  const isHoveredGroup = (id: AnatomyPartId) => {
-    if (hoveredPart === id) return true;
-    if (id === 'P4' && hoveredPart?.startsWith('P4_')) return true;
-    return false;
-  };
-
-  // Helper styles for SVG appendage & somite shapes
   const getAppendageFill = (id: AnatomyPartId) => {
     if (selectedPart === id || (id === 'P4' && selectedPart === 'P4')) {
-      return '#dc2626'; // bright red when selected
+      return '#dc2626';
     }
     if (hoveredPart === id) {
-      return '#fb7185'; // lighter coral on hover
+      return '#fb7185';
     }
-    return '#f04c41'; // exact coral red from user's diagram
+    return '#f04c41';
   };
 
   const getSomiteFill = (id: AnatomyPartId) => {
     if (selectedPart === id) {
-      return '#fde047'; // brighter gold when selected
+      return '#fde047';
     }
     if (hoveredPart === id) {
       return '#fef08a';
     }
-    return '#f4e079'; // exact pale yellow from user's diagram
+    return '#f4e079';
   };
 
   const getStrokeProps = (id: AnatomyPartId) => {
@@ -380,7 +462,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
     };
   };
 
-  // Generate A1 segments (12 segments left and right arcing outward as in the drawing)
   const a1SegmentsLeft = [
     { cx: 294, cy: 112, rx: 11, ry: 11, rot: -35 },
     { cx: 280, cy: 93, rx: 11, ry: 9, rot: -40 },
@@ -410,11 +491,28 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3">
         <div>
           <h3 className="text-sm font-bold text-slate-900">
-            Интерактивная векторная схема строения самки <em>Eucyclops</em> (вентрально)
+            {isEn ? (
+              <>
+                Interactive Vector Diagram of Female <em>Eucyclops</em> Anatomy (Ventral View)
+              </>
+            ) : (
+              <>
+                Интерактивная векторная схема строения самки <em>Eucyclops</em> (вентрально)
+              </>
+            )}
           </h3>
           <p className="text-xs text-slate-600">
-            Нажмите на любую конечность (<span className="font-mono">A1, A2, Mx1, P1–P5</span>, включая отдельные членики{' '}
-            <span className="font-mono">P4: IcS, Cox, Bas, En1–3, Ex1–3</span>) или сомит, чтобы увидеть и сразу ввести относящиеся к ним признаки.
+            {isEn ? (
+              <>
+                Click any appendage (<span className="font-mono">A1, A2, Mx1, P1–P5</span>, including individual segments{' '}
+                <span className="font-mono">P4: IcS, Cox, Bas, En1–3, Ex1–3</span>) or somite to inspect and enter its diagnostic traits.
+              </>
+            ) : (
+              <>
+                Нажмите на любую конечность (<span className="font-mono">A1, A2, Mx1, P1–P5</span>, включая отдельные членики{' '}
+                <span className="font-mono">P4: IcS, Cox, Bas, En1–3, Ex1–3</span>) или сомит, чтобы увидеть и сразу ввести относящиеся к ним признаки.
+              </>
+            )}
           </p>
         </div>
 
@@ -438,7 +536,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
-                <span>{ANATOMY_PARTS[pid].shortLabel}</span>
+                <span>{getPartShortLabel(ANATOMY_PARTS[pid], lang)}</span>
                 <span
                   className={`font-mono text-[10px] ${
                     active ? 'text-sky-100' : 'text-slate-400'
@@ -455,27 +553,29 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
 
       {/* Main Two-Column Interactive Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
-        {/* Left 6 cols: Vector SVG Copepod Diagram modeled directly after user's image */}
+        {/* Left 6 cols: Vector SVG Copepod Diagram */}
         <div className="lg:col-span-6 flex flex-col items-center justify-between bg-white p-4">
           <div className="w-full max-w-[540px]">
             <svg
               viewBox="0 0 660 760"
               className="w-full h-auto select-none"
               role="img"
-              aria-label="Интерактивная схема морфологии циклопа Eucyclops"
+              aria-label={
+                isEn
+                  ? 'Interactive morphology diagram of Eucyclops copepod'
+                  : 'Интерактивная схема морфологии циклопа Eucyclops'
+              }
             >
               {/* ==================== LEFT & RIGHT ANATOMICAL BRACKETS ==================== */}
-              {/* Left Bracket 1: Цефалоторакс */}
               <text
                 x="182"
                 y="162"
                 textAnchor="middle"
                 className="fill-slate-900 text-[15px] font-medium"
               >
-                Цефалоторакс
+                {isEn ? 'Cephalothorax' : 'Цефалоторакс'}
               </text>
 
-              {/* Left Bracket 2: Торакальные сомиты */}
               <line
                 x1="168"
                 y1="204"
@@ -491,10 +591,9 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 transform="rotate(-90 144 390)"
                 className="fill-slate-900 text-[15px] font-medium"
               >
-                Торакальные сомиты
+                {isEn ? 'Thoracic somites' : 'Торакальные сомиты'}
               </text>
 
-              {/* Left Bracket 3: Абдоминальные сомиты */}
               <line
                 x1="158"
                 y1="572"
@@ -510,7 +609,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 transform="rotate(-90 118 638)"
                 className="fill-slate-900 text-[14px] font-medium"
               >
-                Абдоминальные
+                {isEn ? 'Abdominal' : 'Абдоминальные'}
               </text>
               <text
                 x="136"
@@ -519,10 +618,9 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 transform="rotate(-90 136 638)"
                 className="fill-slate-900 text-[14px] font-medium"
               >
-                сомиты
+                {isEn ? 'somites' : 'сомиты'}
               </text>
 
-              {/* Right Bracket 1: Просома */}
               <line
                 x1="515"
                 y1="262"
@@ -538,10 +636,9 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 transform="rotate(-90 542 357)"
                 className="fill-slate-900 text-[15px] font-medium"
               >
-                Просома
+                {isEn ? 'Prosoma' : 'Просома'}
               </text>
 
-              {/* Right Bracket 2: Уросома */}
               <line
                 x1="496"
                 y1="458"
@@ -557,7 +654,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 transform="rotate(-90 524 582)"
                 className="fill-slate-900 text-[15px] font-medium"
               >
-                Уросома
+                {isEn ? 'Urosoma' : 'Уросома'}
               </text>
 
               {/* ==================== 1. CEPHALOTHORAX SHIELD ==================== */}
@@ -572,7 +669,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getSomiteFill('Mx1')}
                   {...getStrokeProps('Mx1')}
                 />
-                {/* Inner cephalothorax rim lines */}
                 <path
                   d="M 262 256 C 262 185 282 135 314 110"
                   fill="none"
@@ -585,7 +681,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   stroke="#1e293b"
                   strokeWidth="1.2"
                 />
-                {/* Rostrum R & Labrum Lr & Mouth */}
                 <text x="330" y="109" textAnchor="middle" className="fill-slate-900 text-[13px] font-semibold">
                   R
                 </text>
@@ -653,7 +748,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Left A2 (Coxobasis + Enp1-3) */}
                 <ellipse
                   cx="296"
                   cy="134"
@@ -691,7 +785,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   {...getStrokeProps('A2')}
                 />
 
-                {/* Right A2 */}
                 <ellipse
                   cx="364"
                   cy="134"
@@ -747,7 +840,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Md left & right */}
                 <ellipse
                   cx="301"
                   cy="158"
@@ -764,7 +856,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('Mx1')}
                   {...getStrokeProps('Mx1')}
                 />
-                {/* Pgn lobes */}
                 <ellipse
                   cx="314"
                   cy="169"
@@ -783,7 +874,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('Mx1')}
                   {...getStrokeProps('Mx1')}
                 />
-                {/* Mx1 left & right */}
                 <ellipse
                   cx="299"
                   cy="176"
@@ -802,7 +892,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('Mx1')}
                   {...getStrokeProps('Mx1')}
                 />
-                {/* Mx2 left & right */}
                 <ellipse
                   cx="286"
                   cy="195"
@@ -839,7 +928,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('Mx1')}
                   {...getStrokeProps('Mx1')}
                 />
-                {/* Mxp left & right */}
                 <ellipse
                   cx="284"
                   cy="220"
@@ -886,7 +974,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Coxae + Intercoxal sclerite bar of P1 */}
                 <rect
                   x="270"
                   y="237"
@@ -914,7 +1001,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('P1')}
                   {...getStrokeProps('P1')}
                 />
-                {/* Left Basis of P1 + Rami */}
                 <rect
                   x="269"
                   y="254"
@@ -924,11 +1010,9 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('P1')}
                   {...getStrokeProps('P1')}
                 />
-                {/* Exp1-3 (outer left) */}
                 <ellipse cx="268" cy="278" rx="7.5" ry="9" transform="rotate(15 268 278)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="263" cy="296" rx="7.5" ry="9" transform="rotate(15 263 296)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="258" cy="314" rx="7.5" ry="9" transform="rotate(15 258 314)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                {/* Enp1-3 (inner left) */}
                 <ellipse cx="301" cy="280" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="301" cy="298" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="301" cy="316" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
@@ -951,13 +1035,11 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Thoracic somite 2 (yellow) */}
                 <path
                   d="M 251 268 L 409 268 C 417 282 419 306 413 319 L 247 319 C 241 306 243 282 251 268 Z"
                   fill={getSomiteFill('P2')}
                   {...getStrokeProps('P2')}
                 />
-                {/* Re-draw P1 rami overlapping P2 somite so layering matches the original figure */}
                 <ellipse cx="268" cy="278" rx="7.5" ry="9" transform="rotate(15 268 278)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="263" cy="296" rx="7.5" ry="9" transform="rotate(15 263 296)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="258" cy="314" rx="7.5" ry="9" transform="rotate(15 258 314)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
@@ -965,7 +1047,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 <ellipse cx="301" cy="298" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
                 <ellipse cx="301" cy="316" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
 
-                {/* P2 Coxae + IcS + Right Basis */}
                 <rect x="270" y="294" width="52" height="16" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
                 <rect x="318" y="296" width="24" height="12" rx="4" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
                 <rect x="338" y="294" width="52" height="16" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
@@ -989,13 +1070,11 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Thoracic somite 3 (yellow) */}
                 <path
                   d="M 253 331 L 407 331 C 415 346 417 372 410 385 L 250 385 C 243 372 245 346 253 331 Z"
                   fill={getSomiteFill('P3')}
                   {...getStrokeProps('P3')}
                 />
-                {/* P2 rami overlapping P3 somite (right side as in original diagram) */}
                 <ellipse cx="358" cy="338" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
                 <ellipse cx="358" cy="356" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
                 <ellipse cx="358" cy="374" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
@@ -1003,7 +1082,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 <ellipse cx="396" cy="354" rx="7.5" ry="9" transform="rotate(-15 396 354)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
                 <ellipse cx="402" cy="372" rx="7.5" ry="9" transform="rotate(-15 402 372)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
 
-                {/* P3 Coxae + IcS + Left Basis */}
                 <rect x="272" y="361" width="50" height="16" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
                 <rect x="318" y="363" width="24" height="12" rx="4" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
                 <rect x="338" y="361" width="50" height="16" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
@@ -1020,9 +1098,8 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 </text>
               </g>
 
-              {/* ==================== 8. SOMITE & LEG PAIR P4 (with clickable IcS, Cox, Bas, En1-3, Ex1-3) ==================== */}
+              {/* ==================== 8. SOMITE & LEG PAIR P4 ==================== */}
               <g>
-                {/* Thoracic somite 4 (yellow) — clicks whole P4 */}
                 <path
                   d="M 260 397 L 400 397 C 408 410 410 432 403 445 L 257 445 C 250 432 252 410 260 397 Z"
                   fill={getSomiteFill('P4')}
@@ -1033,7 +1110,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   className="cursor-pointer"
                 />
 
-                {/* P3 rami overlapping left side of P4 somite (as in original diagram) */}
                 <g
                   onClick={() => setSelectedPart('P3')}
                   onMouseEnter={() => setHoveredPart('P3')}
@@ -1048,7 +1124,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   <ellipse cx="303" cy="440" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
                 </g>
 
-                {/* P4 Left Coxa */}
                 <rect
                   x="274"
                   y="418"
@@ -1063,7 +1138,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   className="cursor-pointer"
                 />
 
-                {/* P4 Intercoxal Sclerite (IcS) */}
                 <g
                   onClick={() => setSelectedPart('P4_IcS')}
                   onMouseEnter={() => setHoveredPart('P4_IcS')}
@@ -1084,7 +1158,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   </text>
                 </g>
 
-                {/* P4 Right Coxa (Cox) */}
                 <g
                   onClick={() => setSelectedPart('P4_Cox')}
                   onMouseEnter={() => setHoveredPart('P4_Cox')}
@@ -1105,7 +1178,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   </text>
                 </g>
 
-                {/* P4 Right Basis (Bas) */}
                 <g
                   onClick={() => setSelectedPart('P4_Bas')}
                   onMouseEnter={() => setHoveredPart('P4_Bas')}
@@ -1126,7 +1198,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   </text>
                 </g>
 
-                {/* P4 Label on Right */}
                 <text
                   x="438"
                   y="428"
@@ -1139,9 +1210,8 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 </text>
               </g>
 
-              {/* ==================== 9. SOMITE 5 (P5) + P4 RAMI (En1-3, Ex1-3) ==================== */}
+              {/* ==================== 9. SOMITE 5 (P5) + P4 RAMI ==================== */}
               <g>
-                {/* Thoracic somite 5 (T5 / P5, crescent-shaped yellow somite) */}
                 <path
                   d="M 294 456 Q 330 448 366 456 C 387 466 398 486 388 501 Q 330 488 272 501 C 262 486 273 466 294 456 Z"
                   fill={getSomiteFill('P5')}
@@ -1151,7 +1221,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   onMouseLeave={() => setHoveredPart(null)}
                   className="cursor-pointer"
                 />
-                {/* Rudimentary P5 lobes */}
                 <ellipse
                   cx="288"
                   cy="502"
@@ -1183,7 +1252,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   P5
                 </text>
 
-                {/* P4 Endopodite (En1, En2, En3) overlapping T5 */}
                 <g
                   onClick={() => setSelectedPart('P4_Enp')}
                   onMouseEnter={() => setHoveredPart('P4_Enp')}
@@ -1204,7 +1272,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   </text>
                 </g>
 
-                {/* P4 Exopodite (Ex1, Ex2, Ex3) */}
                 <g
                   onClick={() => setSelectedPart('P4_Exp')}
                   onMouseEnter={() => setHoveredPart('P4_Exp')}
@@ -1262,7 +1329,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getSomiteFill('GS')}
                   {...getStrokeProps('GS')}
                 />
-                {/* Dotted suture line across the middle of the genital double-somite */}
                 <line
                   x1="301"
                   y1="561"
@@ -1272,7 +1338,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   strokeWidth="1.5"
                   strokeDasharray="2.5,3.5"
                 />
-                {/* P6 lateral plates (red) */}
                 <ellipse
                   cx="295"
                   cy="534"
@@ -1291,7 +1356,6 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   fill={getAppendageFill('GS')}
                   {...getStrokeProps('GS')}
                 />
-                {/* Medial dorsal pore indicator */}
                 <circle
                   cx="330"
                   cy="522"
@@ -1310,7 +1374,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                     selectedPart === 'GS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
                   }`}
                 >
-                  Генитальный
+                  {isEn ? 'Genital' : 'Генитальный'}
                 </text>
                 <text
                   x="236"
@@ -1320,7 +1384,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                     selectedPart === 'GS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
                   }`}
                 >
-                  сомит
+                  {isEn ? 'somite' : 'сомит'}
                 </text>
               </g>
 
@@ -1331,19 +1395,16 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Abdominal somite 2 */}
                 <path
                   d="M 314 603 L 346 603 L 352 634 L 308 634 Z"
                   fill={getSomiteFill('AnS')}
                   {...getStrokeProps('AnS')}
                 />
-                {/* Abdominal somite 3 */}
                 <path
                   d="M 314 638 L 346 638 L 351 669 L 309 669 Z"
                   fill={getSomiteFill('AnS')}
                   {...getStrokeProps('AnS')}
                 />
-                {/* Anal somite (AnS) with proctodeum notch */}
                 <path
                   d="M 316 673 L 344 673 L 347 699 L 336 699 L 330 687 L 324 699 L 313 699 Z"
                   fill={getSomiteFill('AnS')}
@@ -1357,7 +1418,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                     selectedPart === 'AnS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
                   }`}
                 >
-                  Анальный сомит
+                  {isEn ? 'Anal somite' : 'Анальный сомит'}
                 </text>
               </g>
 
@@ -1368,13 +1429,11 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                {/* Left Caudal Ramus */}
                 <path
                   d="M 313 697 L 324 699 L 316 744 Q 310 746 306 742 Z"
                   fill={getSomiteFill('CR')}
                   {...getStrokeProps('CR')}
                 />
-                {/* Right Caudal Ramus */}
                 <path
                   d="M 336 699 L 347 697 L 354 742 Q 350 746 344 744 Z"
                   fill={getSomiteFill('CR')}
@@ -1388,15 +1447,24 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                     selectedPart === 'CR' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
                   }`}
                 >
-                  Каудальные ветви
+                  {isEn ? 'Caudal rami' : 'Каудальные ветви'}
                 </text>
               </g>
             </svg>
           </div>
 
           <div className="mt-1 text-center text-[11px] text-slate-500">
-            Совет: на четвёртой паре ног (<span className="font-mono font-semibold">P4</span>) можно нажимать отдельно на{' '}
-            <span className="font-mono">IcS, Cox, Bas, En1–3</span> и <span className="font-mono">Ex1–3</span>.
+            {isEn ? (
+              <>
+                Tip: on the fourth pair of legs (<span className="font-mono font-semibold">P4</span>), you can click{' '}
+                <span className="font-mono">IcS, Cox, Bas, En1–3</span>, and <span className="font-mono">Ex1–3</span> individually.
+              </>
+            ) : (
+              <>
+                Совет: на четвёртой паре ног (<span className="font-mono font-semibold">P4</span>) можно нажимать отдельно на{' '}
+                <span className="font-mono">IcS, Cox, Bas, En1–3</span> и <span className="font-mono">Ex1–3</span>.
+              </>
+            )}
           </div>
         </div>
 
@@ -1408,10 +1476,10 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <span className="inline-block rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-900">
-                    {currentMeta.bodyDivision}
+                    {isEn ? currentMeta.bodyDivisionEn : currentMeta.bodyDivisionRu}
                   </span>
                   <h4 className="mt-1 text-base font-bold text-slate-900">
-                    {currentMeta.title}
+                    {isEn ? currentMeta.titleEn : currentMeta.titleRu}
                   </h4>
                 </div>
 
@@ -1424,20 +1492,20 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-100 transition-colors cursor-pointer"
                   >
                     <Filter className="h-3.5 w-3.5" />
-                    Показать отдел в общей таблице
+                    {isEn ? 'Filter main list by section' : 'Показать отдел в общей таблице'}
                   </button>
                 )}
               </div>
 
               <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
-                {currentMeta.description}
+                {isEn ? currentMeta.descriptionEn : currentMeta.descriptionRu}
               </p>
 
               {/* Sub-navigation for P4 segments when any P4 part is active */}
               {isSelectedGroup('P4') && (
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
                   <span className="text-[11px] font-semibold text-slate-500 mr-1">
-                    Членики P4:
+                    {isEn ? 'P4 segments:' : 'Членики P4:'}
                   </span>
                   {(
                     [
@@ -1461,7 +1529,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                       >
-                        {ANATOMY_PARTS[subId].shortLabel} ({st.total})
+                        {getPartShortLabel(ANATOMY_PARTS[subId], lang)} ({st.total})
                       </button>
                     );
                   })}
@@ -1472,7 +1540,15 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
             {/* Traits List for Selected Part */}
             {currentTraits.length === 0 ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-5 text-xs text-amber-950 leading-relaxed">
-                Для пятой пары ног (<span className="font-mono font-bold">P5</span>) признаки вооружения исключены из рабочей матрицы определителя по решению автора. Выберите любую другую конечность (<span className="font-mono">A1, A2, Mx1, P1–P4</span>) или сомит уросомы (<span className="font-mono">Генитальный, Анальный, Каудальные ветви</span>).
+                {isEn ? (
+                  <>
+                    For the fifth pair of legs (<span className="font-mono font-bold">P5</span>), ornamentation traits are excluded from the active key matrix by the author. Select any other appendage (<span className="font-mono">A1, A2, Mx1, P1–P4</span>) or urosomal somite (<span className="font-mono">Genital, Anal, Caudal rami</span>).
+                  </>
+                ) : (
+                  <>
+                    Для пятой пары ног (<span className="font-mono font-bold">P5</span>) признаки вооружения исключены из рабочей матрицы определителя по решению автора. Выберите любую другую конечность (<span className="font-mono">A1, A2, Mx1, P1–P4</span>) или сомит уросомы (<span className="font-mono">Генитальный, Анальный, Каудальные ветви</span>).
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
@@ -1481,6 +1557,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                   const currentFilter = activeFilters[trait.code];
                   const sepScore = separatingPower[trait.code] || 0;
                   const ann = traitAnnotations[trait.code];
+                  const displayComment = getTraitDisplayComment(trait.code, traitAnnotations, lang);
                   const draftVal =
                     numericDrafts[trait.code] !== undefined
                       ? numericDrafts[trait.code]
@@ -1507,10 +1584,10 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                         <button
                           type="button"
                           onClick={() => onOpenTraitInspector(trait)}
-                          className="text-left group flex-1"
+                          className="text-left group flex-1 cursor-pointer"
                         >
                           <div className="text-xs font-bold text-slate-900 group-hover:text-sky-700 leading-snug">
-                            {getTraitDisplayDescription(trait.code, traitAnnotations)}
+                            {getTraitDisplayDescription(trait.code, traitAnnotations, lang)}
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
@@ -1525,16 +1602,16 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                                   : 'text-slate-400'
                               }`}
                             >
-                              · разделение: {sepScore}%
+                              · {isEn ? 'separation' : 'разделение'}: {sepScore}%
                             </span>
                             {ann?.imageUrl && (
                               <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-sky-700">
-                                <ImageIcon className="h-3 w-3" /> рис.
+                                <ImageIcon className="h-3 w-3" /> {isEn ? 'fig.' : 'рис.'}
                               </span>
                             )}
-                            {ann?.comment?.trim() && (
+                            {displayComment && (
                               <span className="text-[11px] text-slate-500">
-                                · {ann.comment}
+                                · {displayComment}
                               </span>
                             )}
                           </div>
@@ -1544,8 +1621,8 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                           <button
                             type="button"
                             onClick={() => onClearTrait(trait.code)}
-                            className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-                            title="Сбросить признак"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
+                            title={isEn ? 'Clear trait' : 'Сбросить признак'}
                           >
                             <RotateCcw className="h-3.5 w-3.5" />
                           </button>
@@ -1560,8 +1637,11 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                               const selected =
                                 currentFilter?.selectedStates?.includes(stVal) ??
                                 false;
-                              const stateMeaning =
-                                QUALITATIVE_STATE_LABELS[trait.code]?.[stVal];
+                              const stateMeaning = getQualitativeStateMeaning(
+                                trait.code,
+                                stVal,
+                                lang
+                              );
                               return (
                                 <button
                                   key={stVal}
@@ -1592,8 +1672,8 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                         ) : trait.code === 'A1ser' ? (
                           <div className="flex flex-wrap items-center gap-1.5 w-full">
                             {[
-                              { val: 0, label: 'Гладкая (0)' },
-                              { val: 100, label: 'Много (100)' },
+                              { val: 0, label: isEn ? 'Smooth (0)' : 'Гладкая (0)' },
+                              { val: 100, label: isEn ? 'Many (100)' : 'Много (100)' },
                             ].map((preset) => {
                               const selected =
                                 currentFilter?.selectedStates?.includes(preset.val) ??
@@ -1622,7 +1702,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                               onChange={(e) =>
                                 onQuantitativeChange(trait.code, e.target.value)
                               }
-                              placeholder="Число или 12-18"
+                              placeholder={isEn ? 'Count or 12-18' : 'Число или 12-18'}
                               className={`w-36 rounded-lg border px-2.5 py-1 font-mono text-xs tabular-nums focus:outline-none ${
                                 (currentFilter?.numericValue !== null &&
                                   currentFilter?.numericValue !== undefined) ||
@@ -1636,7 +1716,7 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                         ) : (
                           <div className="flex items-center justify-between gap-2 w-full">
                             <span className="font-mono text-[11px] text-slate-500">
-                              Размах в базе:{' '}
+                              {isEn ? 'Database range:' : 'Размах в базе:'}{' '}
                               <strong className="text-slate-700">
                                 {formatTraitNumber(trait.globalMin, trait.decimals)}–
                                 {formatTraitNumber(trait.globalMax, trait.decimals)}
@@ -1651,7 +1731,11 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                               }
                               placeholder={
                                 trait.kind === 'meristic'
-                                  ? 'Число или 10-14'
+                                  ? isEn
+                                    ? 'Count or 10-14'
+                                    : 'Число или 10-14'
+                                  : isEn
+                                  ? 'Value (e.g. 4.5)'
                                   : 'Значение (напр. 4.5)'
                               }
                               className={`w-40 rounded-lg border px-2.5 py-1 font-mono text-xs tabular-nums focus:outline-none ${

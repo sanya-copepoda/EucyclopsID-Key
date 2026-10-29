@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Upload, Trash2, Image as ImageIcon, Check, ClipboardPaste } from 'lucide-react';
+import { X, Trash2, Image as ImageIcon, Check } from 'lucide-react';
 import { TraitAnnotation, TraitDefinition } from '../types/taxonomy';
-import {
-  ANATOMICAL_SECTION_LABELS,
-  formatTraitNumber,
-} from '../utils/matrixEngine';
+import { formatTraitNumber } from '../utils/matrixEngine';
 import {
   compressImageFileToDataUrl,
   getDefaultPlaceholderDescription,
 } from '../utils/traitAnnotationStore';
+import { getAnatomicalSectionLabel, useLanguage } from '../utils/i18n';
 
 interface TraitInspectorModalProps {
   trait: TraitDefinition;
@@ -23,6 +21,9 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
   onSaveAnnotation,
   onClose,
 }) => {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [description, setDescription] = useState<string>(
     annotation?.description || ''
   );
@@ -100,14 +101,26 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                 {trait.code}
               </h2>
               <span className="text-xs text-slate-500">
-                {ANATOMICAL_SECTION_LABELS[trait.section]} ·{' '}
+                {getAnatomicalSectionLabel(trait.section, lang)} ·{' '}
                 {trait.kind === 'qualitative'
-                  ? `Качественный (состояния: ${trait.discreteStates.join(', ')})`
+                  ? isEn
+                    ? `Qualitative (states: ${trait.discreteStates.join(', ')})`
+                    : `Качественный (состояния: ${trait.discreteStates.join(', ')})`
                   : trait.kind === 'meristic'
-                  ? `Количественный счётный (табл. ${formatTraitNumber(
+                  ? isEn
+                    ? `Quantitative Meristic (range ${formatTraitNumber(
+                        trait.globalMin,
+                        0
+                      )}–${formatTraitNumber(trait.globalMax, 0)})`
+                    : `Количественный счётный (табл. ${formatTraitNumber(
+                        trait.globalMin,
+                        0
+                      )}–${formatTraitNumber(trait.globalMax, 0)})`
+                  : isEn
+                  ? `Morphometric Index (range ${formatTraitNumber(
                       trait.globalMin,
-                      0
-                    )}–${formatTraitNumber(trait.globalMax, 0)})`
+                      2
+                    )}–${formatTraitNumber(trait.globalMax, 2)})`
                   : `Морфометрический индекс (табл. ${formatTraitNumber(
                       trait.globalMin,
                       2
@@ -115,19 +128,21 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
               </span>
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              Карточка признака: расшифровка названия, иллюстрация (одна на все состояния) и методический комментарий.
+              {isEn
+                ? 'Trait card: full morphological description, illustration (one diagram for all states), and methodological comment.'
+                : 'Карточка признака: расшифровка названия, иллюстрация (одна на все состояния) и методический комментарий.'}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {savedNotice && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
-                <Check className="h-3.5 w-3.5" /> Сохранено
+                <Check className="h-3.5 w-3.5" /> {isEn ? 'Saved' : 'Сохранено'}
               </span>
             )}
             <button
               onClick={onClose}
               className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors"
-              aria-label="Закрыть"
+              aria-label={isEn ? 'Close' : 'Закрыть'}
             >
               <X className="h-5 w-5" />
             </button>
@@ -139,8 +154,17 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
           {/* 1. Human-language placeholder / decoding */}
           <div>
             <label className="block text-xs font-semibold text-slate-800">
-              Расшифровка признака на нормальном языке (отображается под кодом{' '}
-              <span className="font-mono">{trait.code}</span> в определителе):
+              {isEn ? (
+                <>
+                  Trait description in plain language (displayed above code{' '}
+                  <span className="font-mono">{trait.code}</span> in the key):
+                </>
+              ) : (
+                <>
+                  Расшифровка признака на нормальном языке (отображается над кодом{' '}
+                  <span className="font-mono">{trait.code}</span> в определителе):
+                </>
+              )}
             </label>
             <input
               type="text"
@@ -149,7 +173,7 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                 setDescription(e.target.value);
                 commitChanges(e.target.value, comment, imageUrl);
               }}
-              placeholder={getDefaultPlaceholderDescription(trait.code)}
+              placeholder={getDefaultPlaceholderDescription(trait.code, lang)}
               className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none"
             />
           </div>
@@ -158,7 +182,9 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
           <div>
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-slate-800">
-                Иллюстрация признака (одна схема / фото на все состояния признака):
+                {isEn
+                  ? 'Trait illustration (single diagram / photo for all states of the trait):'
+                  : 'Иллюстрация признака (одна схема / фото на все состояния признака):'}
               </label>
               {imageUrl && (
                 <button
@@ -168,7 +194,8 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                   }}
                   className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:text-rose-800"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Удалить картинку
+                  <Trash2 className="h-3.5 w-3.5" />{' '}
+                  {isEn ? 'Remove image' : 'Удалить картинку'}
                 </button>
               )}
             </div>
@@ -186,23 +213,34 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                 <div className="flex justify-center bg-white rounded-lg border border-slate-100 p-2">
                   <img
                     src={imageUrl}
-                    alt={`Иллюстрация признака ${trait.code}`}
+                    alt={`${isEn ? 'Trait illustration' : 'Иллюстрация признака'} ${trait.code}`}
                     referrerPolicy="no-referrer"
                     className="max-h-[380px] w-auto object-contain rounded"
                   />
                 </div>
                 <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
                   <span>
-                    Вы можете заменить картинку, выбрав другой файл или нажав{' '}
-                    <kbd className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] text-slate-800">
-                      Ctrl+V
-                    </kbd>
+                    {isEn ? (
+                      <>
+                        You can replace the image by choosing another file or pressing{' '}
+                        <kbd className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] text-slate-800">
+                          Ctrl+V
+                        </kbd>
+                      </>
+                    ) : (
+                      <>
+                        Вы можете заменить картинку, выбрав другой файл или нажав{' '}
+                        <kbd className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] text-slate-800">
+                          Ctrl+V
+                        </kbd>
+                      </>
+                    )}
                   </span>
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="rounded-md border border-slate-300 bg-white px-3 py-1 font-medium text-slate-700 hover:bg-slate-100 transition-colors"
                   >
-                    Заменить файл
+                    {isEn ? 'Replace file' : 'Заменить файл'}
                   </button>
                 </div>
               </div>
@@ -223,13 +261,26 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
               >
                 <ImageIcon className="h-8 w-8 text-slate-400" />
                 <div className="mt-2 text-xs font-semibold text-slate-800">
-                  Щёлкните, чтобы выбрать файл, перетащите картинку сюда или нажмите{' '}
-                  <kbd className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] text-slate-900">
-                    Ctrl+V
-                  </kbd>
+                  {isEn ? (
+                    <>
+                      Click to choose a file, drag &amp; drop an image here, or press{' '}
+                      <kbd className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] text-slate-900">
+                        Ctrl+V
+                      </kbd>
+                    </>
+                  ) : (
+                    <>
+                      Щёлкните, чтобы выбрать файл, перетащите картинку сюда или нажмите{' '}
+                      <kbd className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] text-slate-900">
+                        Ctrl+V
+                      </kbd>
+                    </>
+                  )}
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Удобно вставлять скриншоты рисунков прямо из буфера обмена (PNG, JPG, WebP)
+                  {isEn
+                    ? 'Paste figure screenshots directly from clipboard (PNG, JPG, WebP)'
+                    : 'Удобно вставлять скриншоты рисунков прямо из буфера обмена (PNG, JPG, WebP)'}
                 </p>
               </div>
             )}
@@ -241,7 +292,11 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                   type="url"
                   value={externalUrlInput}
                   onChange={(e) => setExternalUrlInput(e.target.value)}
-                  placeholder="Или вставьте прямую ссылку (URL) на изображение..."
+                  placeholder={
+                    isEn
+                      ? 'Or paste a direct image URL...'
+                      : 'Или вставьте прямую ссылку (URL) на изображение...'
+                  }
                   className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:border-sky-600 focus:outline-none"
                 />
                 {externalUrlInput.trim() && (
@@ -254,7 +309,7 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                     }}
                     className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 whitespace-nowrap shrink-0"
                   >
-                    Прикрепить URL
+                    {isEn ? 'Attach URL' : 'Прикрепить URL'}
                   </button>
                 )}
               </div>
@@ -264,7 +319,9 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
           {/* 3. Comment / Methodological Notes under the trait */}
           <div>
             <label className="block text-xs font-semibold text-slate-800">
-              Комментарий / пояснение к признаку и его состояниям:
+              {isEn
+                ? 'Comment / notes on the trait and its states:'
+                : 'Комментарий / пояснение к признаку и его состояниям:'}
             </label>
             <textarea
               rows={4}
@@ -273,7 +330,11 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                 setComment(e.target.value);
                 commitChanges(description, e.target.value, imageUrl);
               }}
-              placeholder="Например: Как именно считается этот признак, что означают состояния 0, 1, 2 или на каком сегменте смотреть шипики..."
+              placeholder={
+                isEn
+                  ? 'E.g.: How this trait is counted, what states 0, 1, 2 mean, or which segment to inspect...'
+                  : 'Например: Как именно считается этот признак, что означают состояния 0, 1, 2 или на каком сегменте смотреть шипики...'
+              }
               className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white p-3 text-xs leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none"
             />
           </div>
@@ -282,13 +343,15 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-3">
           <span className="text-[11px] text-slate-500">
-            Все изменения автоматически сохраняются в браузере (и доступны для экспорта в JSON).
+            {isEn
+              ? 'All edits are automatically saved in the browser (and can be exported to JSON).'
+              : 'Все изменения автоматически сохраняются в браузере (и доступны для экспорта в JSON).'}
           </span>
           <button
             onClick={onClose}
             className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
           >
-            Готово
+            {isEn ? 'Done' : 'Готово'}
           </button>
         </div>
       </div>

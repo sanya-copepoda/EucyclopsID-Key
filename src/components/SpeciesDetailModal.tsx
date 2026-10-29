@@ -10,15 +10,16 @@ import {
   UserTraitFilter,
 } from '../types/taxonomy';
 import {
-  ANATOMICAL_SECTION_LABELS,
   computeExtrapolatedRange,
   formatTraitNumber,
 } from '../utils/matrixEngine';
 import {
   formatQualitativeStateLabel,
+  getTraitDisplayComment,
   getTraitDisplayDescription,
 } from '../utils/traitAnnotationStore';
 import { SpeciesDistributionMap } from './SpeciesDistributionMap';
+import { getAnatomicalSectionLabel, translateRegion, useLanguage } from '../utils/i18n';
 
 interface SpeciesDetailModalProps {
   species: SpeciesProfile;
@@ -45,6 +46,9 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
   onOpenTraitInspector,
   onLoadSpecimenIntoKey,
 }) => {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [activeTab, setActiveTab] = useState<'traits' | 'specimens'>('traits');
   const [showMapInProfile, setShowMapInProfile] = useState<boolean>(true);
   const [selectedSpecimenNum, setSelectedSpecimenNum] = useState<number | null>(null);
@@ -58,9 +62,9 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
   const filteredTraits = traits.filter((t) => {
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      const ann = traitAnnotations[t.code];
-      const desc = getTraitDisplayDescription(t.code, ann);
-      const text = `${t.code} ${desc} ${ann?.comment || ''}`.toLowerCase();
+      const desc = getTraitDisplayDescription(t.code, traitAnnotations, lang);
+      const comment = getTraitDisplayComment(t.code, traitAnnotations, lang);
+      const text = `${t.code} ${desc} ${comment}`.toLowerCase();
       if (!text.includes(q)) return false;
     }
     const st = species.traitStats[t.code];
@@ -85,18 +89,22 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
             <div className="flex items-baseline gap-3">
               <h2 className="text-xl font-bold italic text-slate-900">{species.sp}</h2>
               <span className="text-xs text-slate-500">
-                группа {species.group} · статус: {species.status} · выборка n = {species.specimenCount} экз. · key: {species.inKey ? '+' : '−'}
+                {isEn
+                  ? `group ${species.group} · status: ${species.status} · sample n = ${species.specimenCount} spec. · key: ${species.inKey ? '+' : '−'}`
+                  : `группа ${species.group} · статус: ${species.status} · выборка n = ${species.specimenCount} экз. · key: ${species.inKey ? '+' : '−'}`}
               </span>
             </div>
             <p className="mt-1 text-xs text-slate-600">
-              Регионы ({species.regions.length}): {species.regions.join(', ') || '—'}
-              {species.inVivoColors.length > 0 && ` · Прижизненная окраска: ${species.inVivoColors.join(', ')}`}
+              {isEn ? 'Regions' : 'Регионы'} ({species.regions.length}):{' '}
+              {species.regions.map((r) => translateRegion(r, lang)).join(', ') || '—'}
+              {species.inVivoColors.length > 0 &&
+                ` · ${isEn ? 'In vivo color' : 'Прижизненная окраска'}: ${species.inVivoColors.join(', ')}`}
             </p>
           </div>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors"
-            aria-label="Закрыть"
+            aria-label={isEn ? 'Close' : 'Закрыть'}
           >
             <X className="h-5 w-5" />
           </button>
@@ -114,7 +122,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Профиль {traits.length} признаков
+                {isEn ? `Profile of ${traits.length} Traits` : `Профиль ${traits.length} признаков`}
               </button>
               <button
                 onClick={() => setActiveTab('specimens')}
@@ -125,7 +133,9 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                 }`}
               >
                 <MapPin className="h-3.5 w-3.5 text-sky-700" />
-                Карта ареала и особи ({species.specimenCount})
+                {isEn
+                  ? `Distribution Map & Specimens (${species.specimenCount})`
+                  : `Карта ареала и особи (${species.specimenCount})`}
               </button>
             </div>
 
@@ -141,7 +151,11 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
               >
                 <MapPin className="h-3.5 w-3.5 text-sky-700" />
                 {showMapInProfile
-                  ? `Скрыть карту (${geocodedCount} точек)`
+                  ? isEn
+                    ? `Hide map (${geocodedCount} pts)`
+                    : `Скрыть карту (${geocodedCount} точек)`
+                  : isEn
+                  ? `Show map (${geocodedCount} pts)`
                   : `Показать карту (${geocodedCount} точек)`}
               </button>
             )}
@@ -156,7 +170,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     traitFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Все ({traits.length})
+                  {isEn ? `All (${traits.length})` : `Все (${traits.length})`}
                 </button>
                 <button
                   onClick={() => setTraitFilter('active')}
@@ -164,7 +178,9 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     traitFilter === 'active' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Введённые в ключе ({Object.keys(activeFilters).length})
+                  {isEn
+                    ? `Entered in Key (${Object.keys(activeFilters).length})`
+                    : `Введённые в ключе (${Object.keys(activeFilters).length})`}
                 </button>
                 <button
                   onClick={() => setTraitFilter('polymorphic')}
@@ -172,7 +188,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     traitFilter === 'polymorphic' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Изменчивые качественные
+                  {isEn ? 'Polymorphic Qualitative' : 'Изменчивые качественные'}
                 </button>
                 <button
                   onClick={() => setTraitFilter('quantitative')}
@@ -180,14 +196,14 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     traitFilter === 'quantitative' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Количественные и индексы
+                  {isEn ? 'Quantitative & Indices' : 'Количественные и индексы'}
                 </button>
               </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Поиск признака..."
+                placeholder={isEn ? 'Search trait...' : 'Поиск признака...'}
                 className="w-48 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-mono text-slate-900 focus:border-sky-600 focus:outline-none"
               />
             </div>
@@ -214,13 +230,27 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-slate-600">
-                    <th className="py-2.5 px-3 font-semibold">Признак и расшифровка</th>
-                    <th className="py-2.5 px-3 font-semibold">Отдел / Тип</th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      {isEn ? 'Trait & Description' : 'Признак и расшифровка'}
+                    </th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      {isEn ? 'Section / Type' : 'Отдел / Тип'}
+                    </th>
                     <th className="py-2.5 px-3 font-semibold text-right">n</th>
-                    <th className="py-2.5 px-3 font-semibold">Табличные значения (Min–Max / Состояния)</th>
-                    <th className="py-2.5 px-3 font-semibold">Среднее ± SD</th>
-                    <th className="py-2.5 px-3 font-semibold">Расчётный допуск (с учётом n={species.specimenCount})</th>
-                    <th className="py-2.5 px-3 font-semibold">Статус в ключе</th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      {isEn ? 'Empirical Values (Min–Max / States)' : 'Табличные значения (Min–Max / Состояния)'}
+                    </th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      {isEn ? 'Mean ± SD' : 'Среднее ± SD'}
+                    </th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      {isEn
+                        ? `Extrapolated Tolerance (n=${species.specimenCount})`
+                        : `Расчётный допуск (с учётом n=${species.specimenCount})`}
+                    </th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      {isEn ? 'Key Status' : 'Статус в ключе'}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -228,6 +258,8 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     const st = species.traitStats[trait.code];
                     const evalDetail = evaluation?.details[trait.code];
                     const ann = traitAnnotations[trait.code];
+                    const desc = getTraitDisplayDescription(trait.code, traitAnnotations, lang);
+                    const comment = getTraitDisplayComment(trait.code, traitAnnotations, lang);
                     const { extMin, extMax } = computeExtrapolatedRange(
                       st,
                       trait,
@@ -257,28 +289,34 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                             className="text-left group"
                           >
                             <div className="text-xs font-semibold text-slate-900 group-hover:text-sky-700 leading-snug">
-                              {getTraitDisplayDescription(trait.code, ann)}
+                              {desc}
                             </div>
                             <div className="mt-0.5 flex items-center gap-1.5">
                               <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
                                 {trait.code}
                               </span>
                               {ann?.imageUrl && <ImageIcon className="h-3 w-3 text-sky-600" />}
-                              {ann?.comment?.trim() && (
+                              {comment && (
                                 <span className="text-[10px] text-slate-400 truncate max-w-[220px]">
-                                  · {ann.comment}
+                                  · {comment}
                                 </span>
                               )}
                             </div>
                           </button>
                         </td>
                         <td className="py-2 px-3 text-slate-500 whitespace-nowrap">
-                          <div>{ANATOMICAL_SECTION_LABELS[trait.section].split(' ')[0]}</div>
+                          <div>{getAnatomicalSectionLabel(trait.section, lang).split(' ')[0]}</div>
                           <div className="text-[10px] text-slate-400">
                             {trait.kind === 'qualitative'
-                              ? 'Качественный'
+                              ? isEn
+                                ? 'Qualitative'
+                                : 'Качественный'
                               : trait.kind === 'meristic'
-                              ? 'Счётный'
+                              ? isEn
+                                ? 'Meristic'
+                                : 'Счётный'
+                              : isEn
+                              ? 'Index'
                               : 'Индекс'}
                           </div>
                         </td>
@@ -287,17 +325,19 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                         </td>
                         <td className="py-2 px-3 font-mono tabular-nums text-slate-900">
                           {!st || st.n === 0 ? (
-                            <span className="text-slate-400">? (нет данных)</span>
+                            <span className="text-slate-400">
+                              {isEn ? '? (no data)' : '? (нет данных)'}
+                            </span>
                           ) : trait.kind === 'qualitative' ? (
                             <div>
                               <span className="font-semibold">
                                 {st.stateSet
-                                  .map((val) => formatQualitativeStateLabel(trait.code, val))
+                                  .map((val) => formatQualitativeStateLabel(trait.code, val, lang))
                                   .join(' / ')}
                               </span>
                               {isPolymorphic && (
                                 <span className="ml-2 text-slate-500">
-                                  [полиморфный:{' '}
+                                  [{isEn ? 'polymorphic' : 'полиморфный'}:{' '}
                                   {st.stateSet
                                     .map((val) => `${val} (${st.stateCounts[val]}/${st.n})`)
                                     .join(', ')}
@@ -320,7 +360,11 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                           ) : (
                             <>
                               {formatTraitNumber(st.mean, 2)}
-                              {st.sampleSd !== null ? ` ± ${st.sampleSd.toFixed(2)}` : ' (SD родовая)'}
+                              {st.sampleSd !== null
+                                ? ` ± ${st.sampleSd.toFixed(2)}`
+                                : isEn
+                                ? ' (pooled SD)'
+                                : ' (SD родовая)'}
                             </>
                           )}
                         </td>
@@ -328,7 +372,10 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                           {!st || st.n === 0 ? (
                             '—'
                           ) : trait.kind === 'qualitative' ? (
-                            <span>Учитывается при выборе: {st.stateSet.join(' или ')}</span>
+                            <span>
+                              {isEn ? 'Matches states:' : 'Учитывается при выборе:'}{' '}
+                              {st.stateSet.join(isEn ? ' or ' : ' или ')}
+                            </span>
                           ) : extMin === extMax ? (
                             <span>{formatTraitNumber(extMin, trait.decimals)}</span>
                           ) : (
@@ -340,22 +387,28 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                         </td>
                         <td className="py-2 px-3 whitespace-nowrap">
                           {!evalDetail ? (
-                            <span className="text-slate-400">Не задан</span>
+                            <span className="text-slate-400">{isEn ? 'Not set' : 'Не задан'}</span>
                           ) : evalDetail.status === 'exact_match' ? (
                             <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> В табличном диапазоне ({evalDetail.userInputSummary})
+                              <CheckCircle2 className="h-3.5 w-3.5" />{' '}
+                              {isEn ? 'Within empirical range' : 'В табличном диапазоне'} (
+                              {evalDetail.userInputSummary})
                             </span>
                           ) : evalDetail.status === 'extrapolated_match' ? (
                             <span className="inline-flex items-center gap-1 font-medium text-amber-700">
-                              <AlertTriangle className="h-3.5 w-3.5" /> В расширенном диапазоне ({evalDetail.userInputSummary})
+                              <AlertTriangle className="h-3.5 w-3.5" />{' '}
+                              {isEn ? 'Within extrapolated range' : 'В расширенном диапазоне'} (
+                              {evalDetail.userInputSummary})
                             </span>
                           ) : evalDetail.status === 'missing_data' ? (
                             <span className="inline-flex items-center gap-1 text-slate-500">
-                              <HelpCircle className="h-3.5 w-3.5" /> Нет данных у вида
+                              <HelpCircle className="h-3.5 w-3.5" />{' '}
+                              {isEn ? 'Missing data for species' : 'Нет данных у вида'}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 font-semibold text-rose-700">
-                              ✕ Не совпадает (введено: {evalDetail.userInputSummary})
+                              ✕ {isEn ? 'Mismatch (entered:' : 'Не совпадает (введено:'}{' '}
+                              {evalDetail.userInputSummary})
                             </span>
                           )}
                         </td>
@@ -379,19 +432,45 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
               />
 
               <p className="text-xs text-slate-600">
-                Ниже перечислены все особи вида <strong className="italic">{species.sp}</strong> из исходной матрицы. Нажмите на координаты особи, чтобы сфокусировать её точку на карте выше, или подставьте промеры особи в определитель.
+                {isEn ? (
+                  <>
+                    Below are all specimens of <strong className="italic">{species.sp}</strong> from
+                    the reference matrix. Click any specimen&apos;s coordinates to highlight its pin
+                    on the map above, or load its measurements into the key.
+                  </>
+                ) : (
+                  <>
+                    Ниже перечислены все особи вида <strong className="italic">{species.sp}</strong>{' '}
+                    из исходной матрицы. Нажмите на координаты особи, чтобы сфокусировать её точку на
+                    карте выше, или подставьте промеры особи в определитель.
+                  </>
+                )}
               </p>
               <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-slate-600">
                       <th className="py-2.5 px-3 font-semibold">num / NN</th>
-                      <th className="py-2.5 px-3 font-semibold">Регион / Район</th>
-                      <th className="py-2.5 px-3 font-semibold">Водоем</th>
-                      <th className="py-2.5 px-3 font-semibold">Координаты (N, E)</th>
-                      <th className="py-2.5 px-3 font-semibold">Дата / Сборщик (leg.)</th>
-                      <th className="py-2.5 px-3 font-semibold">Ключевые индексы (cr/cs · xa/x · A1ser)</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Тест в определителе</th>
+                      <th className="py-2.5 px-3 font-semibold">
+                        {isEn ? 'Region / District' : 'Регион / Район'}
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold">
+                        {isEn ? 'Waterbody' : 'Водоем'}
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold">
+                        {isEn ? 'Coordinates (N, E)' : 'Координаты (N, E)'}
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold">
+                        {isEn ? 'Date / Collector (leg.)' : 'Дата / Сборщик (leg.)'}
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold">
+                        {isEn
+                          ? 'Key Indices (cr/cs · xa/x · A1ser)'
+                          : 'Ключевые индексы (cr/cs · xa/x · A1ser)'}
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold text-right">
+                        {isEn ? 'Test in Key' : 'Тест в определителе'}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -408,7 +487,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                             #{spec.num}
                           </td>
                           <td className="py-2.5 px-3 text-slate-800">
-                            {spec.region}
+                            {translateRegion(spec.region, lang)}
                             {spec.district && spec.district !== '-' ? ` · ${spec.district}` : ''}
                           </td>
                           <td className="py-2.5 px-3 text-slate-700">
@@ -421,7 +500,11 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                                 type="button"
                                 onClick={() => setSelectedSpecimenNum(spec.num)}
                                 className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-colors"
-                                title="Показать эту особь на карте"
+                                title={
+                                  isEn
+                                    ? 'Focus this specimen on the map'
+                                    : 'Показать эту особь на карте'
+                                }
                               >
                                 <MapPin className="h-3 w-3 text-sky-700" />
                                 {spec.lat.toFixed(4)}, {spec.lon.toFixed(4)}
@@ -430,14 +513,14 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                               '—'
                             )}
                           </td>
-                        <td className="py-2.5 px-3 text-slate-600">
-                          {spec.date} · {spec.collector}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono tabular-nums text-slate-700 whitespace-nowrap">
-                          cr/cs: {formatTraitNumber(spec.traits['cr/cs'], 2)} · xa/x:{' '}
-                          {formatTraitNumber(spec.traits['xa/x'], 2)} · A1ser:{' '}
-                          {formatTraitNumber(spec.traits['A1ser'], 0)}
-                        </td>
+                          <td className="py-2.5 px-3 text-slate-600">
+                            {spec.date} · {spec.collector}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono tabular-nums text-slate-700 whitespace-nowrap">
+                            cr/cs: {formatTraitNumber(spec.traits['cr/cs'], 2)} · xa/x:{' '}
+                            {formatTraitNumber(spec.traits['xa/x'], 2)} · A1ser:{' '}
+                            {formatTraitNumber(spec.traits['A1ser'], 0)}
+                          </td>
                           <td className="py-2.5 px-3 text-right whitespace-nowrap">
                             <div className="inline-flex items-center gap-1.5">
                               <button
@@ -447,7 +530,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                                 }}
                                 className="rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0"
                               >
-                                8 признаков
+                                {isEn ? '8 traits' : '8 признаков'}
                               </button>
                               <button
                                 onClick={() => {
@@ -456,7 +539,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                                 }}
                                 className="rounded bg-sky-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-sky-800 transition-colors whitespace-nowrap shrink-0"
                               >
-                                Все промеры особи
+                                {isEn ? 'All specimen traits' : 'Все промеры особи'}
                               </button>
                             </div>
                           </td>

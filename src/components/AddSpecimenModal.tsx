@@ -7,6 +7,7 @@ import {
   UserTraitFilter,
 } from '../types/taxonomy';
 import { parsePastedSpecimenRows } from '../utils/matrixEngine';
+import { useLanguage } from '../utils/i18n';
 
 interface AddSpecimenModalProps {
   speciesList: SpeciesProfile[];
@@ -31,6 +32,9 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
   onExportFullCsv,
   onClose,
 }) => {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+
   const [mode, setMode] = useState<'paste' | 'manage'>('paste');
 
   const nextAvailableNum = useMemo(() => {
@@ -46,14 +50,18 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
     const parsed = parsePastedSpecimenRows(pastedText, traits, nextAvailableNum);
     if (parsed.length === 0) {
       setPasteFeedback(
-        'Не удалось распознать строки. Убедитесь, что строка содержит колонки как в исходной таблице (начиная с номера или названия вида).'
+        isEn
+          ? 'Could not parse rows. Make sure each row contains columns matching the reference table (starting with specimen number or species name).'
+          : 'Не удалось распознать строки. Убедитесь, что строка содержит колонки как в исходной таблице (начиная с номера или названия вида).'
       );
       return;
     }
     onAddSpecimens(parsed);
     setPastedText('');
     setPasteFeedback(
-      `Успешно добавлено особей из таблицы: ${parsed.length}. Все диапазоны изменчивости и поправки на малую выборку в ключе динамически обновлены.`
+      isEn
+        ? `Successfully added ${parsed.length} specimen(s) from table rows. All variability ranges and small-sample tolerances in the key have been dynamically updated.`
+        : `Успешно добавлено особей из таблицы: ${parsed.length}. Все диапазоны изменчивости и поправки на малую выборку в ключе динамически обновлены.`
     );
     setMode('manage');
   };
@@ -65,10 +73,14 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-4">
           <div>
             <div className="text-xs font-semibold text-sky-800">
-              Динамическое пополнение базы препаратов из табличных данных · Автоматический пересчёт ключа
+              {isEn
+                ? 'Dynamic Specimen Database Expansion from Tabular Data · Automatic Key Recalculation'
+                : 'Динамическое пополнение базы препаратов из табличных данных · Автоматический пересчёт ключа'}
             </div>
             <h2 className="mt-0.5 text-lg font-bold text-slate-900">
-              Импорт строк из таблицы Excel / CSV и управление матрицей ({specimens.length} экз.)
+              {isEn
+                ? `Import Rows from Excel / CSV & Manage Matrix (${specimens.length} spec.)`
+                : `Импорт строк из таблицы Excel / CSV и управление матрицей (${specimens.length} экз.)`}
             </h2>
           </div>
           <button
@@ -92,7 +104,7 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
               }`}
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
-              Вставить строки из Excel / CSV
+              {isEn ? 'Paste Rows from Excel / CSV' : 'Вставить строки из Excel / CSV'}
             </button>
             <button
               type="button"
@@ -103,7 +115,9 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Добавленные особи ({extraSpecimens.length})
+              {isEn
+                ? `Added Specimens (${extraSpecimens.length})`
+                : `Добавленные особи (${extraSpecimens.length})`}
             </button>
           </div>
 
@@ -113,7 +127,7 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
           >
             <Download className="h-3.5 w-3.5 text-sky-700" />
-            Скачать обновлённую матрицу (.csv)
+            {isEn ? 'Download Updated Matrix (.csv)' : 'Скачать обновлённую матрицу (.csv)'}
           </button>
         </div>
 
@@ -138,10 +152,14 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
             <div className="space-y-4">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 space-y-1.5">
                 <div className="font-semibold text-slate-900">
-                  Добавление особей из таблицы Excel или CSV:
+                  {isEn
+                    ? 'Adding specimens from an Excel or CSV table:'
+                    : 'Добавление особей из таблицы Excel или CSV:'}
                 </div>
                 <p>
-                  Скопируйте одну или несколько строк особей в вашей рабочей таблице Excel (или CSV) и вставьте их в поле ниже. Порядок столбцов должен соответствовать исходному файлу (метаданные особи + признаки). Также вы можете загрузить обновлённый CSV-файл целиком кнопкой «Загрузить CSV матрицу» в верхней панели.
+                  {isEn
+                    ? 'Copy one or more specimen rows from your working Excel sheet (or CSV) and paste them into the box below. Column order must match the reference file (specimen metadata + morphological traits). You can also upload a complete updated CSV file using the "Upload CSV Matrix" button in the top bar.'
+                    : 'Скопируйте одну или несколько строк особей в вашей рабочей таблице Excel (или CSV) и вставьте их в поле ниже. Порядок столбцов должен соответствовать исходному файлу (метаданные особи + признаки). Также вы можете загрузить обновлённый CSV-файл целиком кнопкой «Загрузить CSV матрицу» в верхней панели.'}
                 </p>
               </div>
 
@@ -149,7 +167,11 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                 rows={9}
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
-                placeholder="Вставьте сюда одну или несколько строк, скопированных из Excel (разделитель табуляция) или CSV (разделитель запятая)..."
+                placeholder={
+                  isEn
+                    ? 'Paste one or more rows copied from Excel (tab-separated) or CSV (comma-separated)...'
+                    : 'Вставьте сюда одну или несколько строк, скопированных из Excel (разделитель табуляция) или CSV (разделитель запятая)...'
+                }
                 className="w-full rounded-xl border border-slate-300 p-3 font-mono text-xs text-slate-900 focus:border-sky-600 focus:outline-none"
               />
 
@@ -159,7 +181,7 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                   onClick={onClose}
                   className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  Закрыть
+                  {isEn ? 'Close' : 'Закрыть'}
                 </button>
                 <button
                   type="button"
@@ -167,7 +189,7 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                   disabled={!pastedText.trim()}
                   className="rounded-lg bg-sky-700 px-5 py-2 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-40"
                 >
-                  Распознать и добавить строки в базу
+                  {isEn ? 'Parse & Add Rows to Database' : 'Распознать и добавить строки в базу'}
                 </button>
               </div>
             </div>
@@ -177,7 +199,9 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs text-slate-600">
-                  Ниже перечислены особи, добавленные из табличных строк сверх исходных 182 препаратов. Они сохраняются в браузере и автоматически участвуют в расчёте всех диапазонов и статистик ключа. Вы также можете выгрузить единый обновлённый CSV-файл.
+                  {isEn
+                    ? 'Below are specimens added from tabular rows in addition to the 182 baseline specimens. They are saved in your browser and automatically included in all range and variance calculations.'
+                    : 'Ниже перечислены особи, добавленные из табличных строк сверх исходных 182 препаратов. Они сохраняются в браузере и автоматически участвуют в расчёте всех диапазонов и статистик ключа.'}
                 </p>
                 {extraSpecimens.length > 0 && (
                   <button
@@ -186,14 +210,18 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-800 hover:bg-rose-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    Удалить все добавленные ({extraSpecimens.length})
+                    {isEn
+                      ? `Delete All Added (${extraSpecimens.length})`
+                      : `Удалить все добавленные (${extraSpecimens.length})`}
                   </button>
                 )}
               </div>
 
               {extraSpecimens.length === 0 ? (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-slate-500">
-                  Пока нет дополнительно добавленных особей. Используйте вкладку «Вставить строки из Excel / CSV» или кнопку «Загрузить CSV матрицу» в шапке.
+                  {isEn
+                    ? 'No extra specimens added yet. Use the "Paste Rows from Excel / CSV" tab or the "Upload CSV Matrix" button in the header.'
+                    : 'Пока нет дополнительно добавленных особей. Используйте вкладку «Вставить строки из Excel / CSV» или кнопку «Загрузить CSV матрицу» в шапке.'}
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -201,11 +229,21 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50 text-slate-600">
                         <th className="py-2.5 px-3 font-semibold">num</th>
-                        <th className="py-2.5 px-3 font-semibold">Вид (sp)</th>
-                        <th className="py-2.5 px-3 font-semibold">Группа</th>
-                        <th className="py-2.5 px-3 font-semibold">Локалитет</th>
-                        <th className="py-2.5 px-3 font-semibold">Заполнено признаков</th>
-                        <th className="py-2.5 px-3 font-semibold text-right">Действие</th>
+                        <th className="py-2.5 px-3 font-semibold">
+                          {isEn ? 'Species (sp)' : 'Вид (sp)'}
+                        </th>
+                        <th className="py-2.5 px-3 font-semibold">
+                          {isEn ? 'Group' : 'Группа'}
+                        </th>
+                        <th className="py-2.5 px-3 font-semibold">
+                          {isEn ? 'Locality' : 'Локалитет'}
+                        </th>
+                        <th className="py-2.5 px-3 font-semibold">
+                          {isEn ? 'Traits Recorded' : 'Заполнено признаков'}
+                        </th>
+                        <th className="py-2.5 px-3 font-semibold text-right">
+                          {isEn ? 'Action' : 'Действие'}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -231,7 +269,7 @@ export const AddSpecimenModal: React.FC<AddSpecimenModalProps> = ({
                               className="inline-flex items-center gap-1 rounded border border-rose-200 bg-white px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
                             >
                               <Trash2 className="h-3 w-3" />
-                              Удалить
+                              {isEn ? 'Delete' : 'Удалить'}
                             </button>
                           </td>
                         </tr>
