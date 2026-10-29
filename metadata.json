@@ -1,0 +1,6 @@
+{
+  "name": "Eucyclops Polyclave — Интерактивный определитель эуциклопов",
+  "description": "Многовходовый (Lucid-подобный) таксономический ключ для определения видов рода Eucyclops на основе морфометрической и меристической матрицы особей с байесовской поправкой диапазонов для малых выборок.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
