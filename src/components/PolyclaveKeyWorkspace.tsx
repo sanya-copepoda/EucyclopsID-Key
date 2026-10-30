@@ -515,7 +515,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                         <strong>Entering qualitative & quantitative characters:</strong> For qualitative traits, click the state buttons (if uncertain, you may select multiple states; polymorphic species are retained if any of their known states is selected). For quantitative traits and indices, enter a single number (e.g. <span className="font-mono">4.8</span>) or a range with a hyphen (<span className="font-mono">14-18</span>).
                       </li>
                       <li>
-                        <strong>Illustrations & notes:</strong> Click any trait name to open its card, where you can attach a reference drawing/micrograph and edit notes.
+                        <strong>Illustrations &amp; descriptions:</strong> Click any trait name to open its card with morphological description, character state definitions, and reference illustration (if available).
                       </li>
                       <li>
                         <strong>Color-coded taxonomic status:</strong>{' '}
@@ -536,7 +536,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                         <strong>Ввод качественных и количественных признаков:</strong> для качественных признаков нажимайте на кнопки состояний (при сомнении можно выбрать сразу два состояния; изменчивые виды учитываются при нажатии любого из свойственных им состояний). Для количественных признаков и индексов можно ввести одно число (например, <span className="font-mono">4.8</span>) или диапазон через дефис (<span className="font-mono">14-18</span>).
                       </li>
                       <li>
-                        <strong>Иллюстрации и описания:</strong> при нажатии на название любого признака открывается его карточка, куда можно прикрепить эталонный рисунок/фотографию и отредактировать комментарий.
+                        <strong>Иллюстрации и описания:</strong> при нажатии на название любого признака открывается его карточка с морфологическим описанием, состояниями и эталонной иллюстрацией (если для признака загружен рисунок).
                       </li>
                       <li>
                         <strong>Цветовая маркировка видов в списке кандидатов:</strong>{' '}
@@ -838,8 +838,8 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           {activeFilterCount === 0 ? (
             <p className="mt-1.5 text-xs text-slate-500">
               {isEn
-                ? 'Click any trait on the left to inspect or attach an illustration, or enter an observed state/value directly.'
-                : 'Щёлкните по любому признаку слева, чтобы добавить его картинку, расшифровку или комментарий, либо сразу введите наблюдаемое значение.'}
+                ? 'Click any trait on the left to view its description and illustration, or enter an observed state/value directly.'
+                : 'Щёлкните по любому признаку слева, чтобы открыть его описание и иллюстрацию, либо сразу введите наблюдаемое значение.'}
             </p>
           ) : (
             <div className="mt-2 flex flex-wrap items-center gap-1.5 max-h-16 overflow-y-auto">
@@ -1134,8 +1134,8 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             className="group text-left focus:outline-none cursor-pointer"
                             title={
                               isEn
-                                ? 'Click to open/add trait illustration, description, and notes'
-                                : 'Щёлкните, чтобы открыть/добавить картинку признака, расшифровку и комментарий'
+                                ? 'Click to open trait description and illustration'
+                                : 'Щёлкните, чтобы открыть описание и иллюстрацию признака'
                             }
                           >
                             <span className="text-sm font-semibold text-slate-900 group-hover:text-sky-700 transition-colors">
@@ -1153,22 +1153,12 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-normal text-slate-400 group-hover:text-slate-700 transition-colors">
                               {trait.code}
                             </span>
-                            <span
-                              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] transition-colors ${
-                                hasImage
-                                  ? 'bg-sky-100 text-sky-800 font-medium'
-                                  : 'bg-slate-100/70 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-700'
-                              }`}
-                            >
-                              <ImageIcon className="h-3 w-3" />
-                              {hasImage
-                                ? isEn
-                                  ? 'Image'
-                                  : 'Картинка'
-                                : isEn
-                                ? '+ photo'
-                                : '+ фото'}
-                            </span>
+                            {hasImage && (
+                              <span className="inline-flex items-center gap-1 rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-800 hover:bg-sky-200/80 transition-colors">
+                                <ImageIcon className="h-3 w-3" />
+                                {isEn ? 'Image' : 'Картинка'}
+                              </span>
+                            )}
                           </button>
 
                           <span className="text-[11px] text-slate-400">
@@ -1249,22 +1239,6 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
 
                       {/* Right: Interactive Control */}
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        {hasImage && (
-                          <button
-                            type="button"
-                            onClick={() => onOpenTraitInspector(trait)}
-                            className="h-9 w-9 overflow-hidden rounded-lg border border-slate-200 bg-white p-0.5 hover:border-sky-500 shrink-0 cursor-pointer"
-                            title={isEn ? 'Open trait illustration' : 'Открыть иллюстрацию признака'}
-                          >
-                            <img
-                              src={ann.imageUrl}
-                              alt={trait.code}
-                              referrerPolicy="no-referrer"
-                              className="h-full w-full object-cover rounded"
-                            />
-                          </button>
-                        )}
-
                         {trait.code === 'A1ser' ? (
                           <div className="flex flex-wrap items-center gap-1.5">
                             <button
@@ -1557,6 +1531,16 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                     <span className="text-base font-bold italic text-emerald-950">
                       {remainingCandidates[0].species.sp}
                     </span>
+                    {remainingCandidates[0].species.authority && (
+                      <span className="text-xs font-semibold text-emerald-900">
+                        {remainingCandidates[0].species.authority}
+                      </span>
+                    )}
+                    {remainingCandidates[0].species.taxonomicNote && (
+                      <span className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-amber-950">
+                        [{remainingCandidates[0].species.taxonomicNote}]
+                      </span>
+                    )}
                     <span
                       className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                         getTaxonVisualStyle(remainingCandidates[0].species.status).badgeClass
@@ -1665,6 +1649,16 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                                 >
                                   {species.sp}
                                 </button>
+                                {species.authority && (
+                                  <span className="text-xs font-medium text-slate-600">
+                                    {species.authority}
+                                  </span>
+                                )}
+                                {species.taxonomicNote && (
+                                  <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.2 font-mono text-[10px] text-amber-900">
+                                    [{species.taxonomicNote}]
+                                  </span>
+                                )}
                                 <span
                                   className={`rounded px-2 py-0.5 font-mono text-xs font-bold tabular-nums ${simColor}`}
                                 >
@@ -1771,6 +1765,16 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             >
                               {species.sp}
                             </button>
+                            {species.authority && (
+                              <span className="text-xs font-medium text-slate-600">
+                                {species.authority}
+                              </span>
+                            )}
+                            {species.taxonomicNote && (
+                              <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.2 font-mono text-[10px] text-amber-900">
+                                [{species.taxonomicNote}]
+                              </span>
+                            )}
                             <span
                               className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${taxonStyle.badgeClass}`}
                             >
@@ -1883,6 +1887,16 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                           >
                             {species.sp}
                           </button>
+                          {species.authority && (
+                            <span className="text-xs font-medium text-slate-600">
+                              {species.authority}
+                            </span>
+                          )}
+                          {species.taxonomicNote && (
+                            <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.2 font-mono text-[10px] text-amber-900">
+                              [{species.taxonomicNote}]
+                            </span>
+                          )}
                           <span
                             className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${taxonStyle.badgeClass}`}
                           >

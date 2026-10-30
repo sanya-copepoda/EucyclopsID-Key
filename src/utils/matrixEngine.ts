@@ -11,6 +11,7 @@ import {
   TraitKind,
   UserTraitFilter,
 } from '../types/taxonomy';
+import { getSpeciesTaxonomicMeta } from '../data/speciesMetadata';
 
 /**
  * Excluded traits: P5 traits are completely removed as requested by the user.
@@ -393,8 +394,12 @@ export function buildDatasetFromSpecimens(
       };
     }
 
+    const taxMeta = getSpeciesTaxonomicMeta(spName);
+
     speciesList.push({
       sp: spName,
+      authority: taxMeta?.authority,
+      taxonomicNote: taxMeta?.taxonomicNote,
       group,
       status,
       inKey,

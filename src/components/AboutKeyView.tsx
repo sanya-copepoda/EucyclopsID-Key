@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Download, Mail, User, Building2 } from 'lucide-react';
+import { Plus, Download, Mail, User, Building2, FolderUp } from 'lucide-react';
 import {
   KeyConfig,
   SpeciesProfile,
@@ -20,6 +20,7 @@ interface AboutKeyViewProps {
   onSelectSpeciesDetail: (sp: SpeciesProfile) => void;
   onLoadSpecimenIntoKey: (specimen: SpecimenRecord, mode: 'all' | 'diagnostic8') => void;
   onOpenAddSpecimenModal: () => void;
+  onOpenBatchMediaModal?: () => void;
   onRemoveExtraSpecimen: (num: number) => void;
   onExportFullCsv: () => void;
 }
@@ -34,6 +35,7 @@ export const AboutKeyView: React.FC<AboutKeyViewProps> = ({
   onSelectSpeciesDetail,
   onLoadSpecimenIntoKey,
   onOpenAddSpecimenModal,
+  onOpenBatchMediaModal,
   onRemoveExtraSpecimen,
   onExportFullCsv,
 }) => {
@@ -394,15 +396,29 @@ export const AboutKeyView: React.FC<AboutKeyViewProps> = ({
                 {validSpecies.map((sp) => (
                   <div
                     key={sp.sp}
-                    className="flex items-center justify-between py-2 text-xs"
+                    className="flex items-start justify-between gap-2 py-2.5 text-xs"
                   >
-                    <button
-                      onClick={() => onSelectSpeciesDetail(sp)}
-                      className="font-bold italic text-emerald-900 hover:text-emerald-700 text-left cursor-pointer"
-                    >
-                      {sp.sp}
-                    </button>
-                    <span className="font-mono text-[11px] tabular-nums text-slate-500">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-1.5">
+                        <button
+                          onClick={() => onSelectSpeciesDetail(sp)}
+                          className="font-bold italic text-emerald-900 hover:text-emerald-700 text-left cursor-pointer"
+                        >
+                          {sp.sp}
+                        </button>
+                        {sp.authority && (
+                          <span className="text-[11px] font-medium text-slate-700">
+                            {sp.authority}
+                          </span>
+                        )}
+                      </div>
+                      {sp.taxonomicNote && (
+                        <div className="mt-0.5 font-mono text-[10px] text-amber-900">
+                          [{sp.taxonomicNote}]
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-mono text-[11px] tabular-nums text-slate-500 shrink-0">
                       {isEn ? 'gr.' : 'гр.'} {sp.group} · n = {sp.specimenCount}
                     </span>
                   </div>
@@ -428,15 +444,22 @@ export const AboutKeyView: React.FC<AboutKeyViewProps> = ({
                 {candidateNewSpecies.map((sp) => (
                   <div
                     key={sp.sp}
-                    className="flex items-center justify-between py-2 text-xs"
+                    className="flex items-start justify-between gap-2 py-2 text-xs"
                   >
-                    <button
-                      onClick={() => onSelectSpeciesDetail(sp)}
-                      className="font-bold italic text-sky-900 hover:text-sky-700 text-left cursor-pointer"
-                    >
-                      {sp.sp}
-                    </button>
-                    <span className="font-mono text-[11px] tabular-nums text-slate-500">
+                    <div className="min-w-0">
+                      <button
+                        onClick={() => onSelectSpeciesDetail(sp)}
+                        className="font-bold italic text-sky-900 hover:text-sky-700 text-left cursor-pointer"
+                      >
+                        {sp.sp}
+                      </button>
+                      {sp.taxonomicNote && (
+                        <div className="mt-0.5 font-mono text-[10px] text-amber-900">
+                          [{sp.taxonomicNote}]
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-mono text-[11px] tabular-nums text-slate-500 shrink-0">
                       {isEn ? 'gr.' : 'гр.'} {sp.group} · n = {sp.specimenCount}
                     </span>
                   </div>

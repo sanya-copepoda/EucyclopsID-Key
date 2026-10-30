@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-30T12:00:00.000Z",
+  "traitAnnotations": {
+    "A2g1": {
+      "traitCode": "A2g1",
+      "description": "Spinule group 1 on the antennal (A2) coxobasis",
+      "comment": "Number of spinules",
+      "imageUrl": "assets/aistudio/A2Coxobasis_ced8250c.png",
+      "imageSource": "Alekseev, V., Dumont, H. J., Pensaert, J., Baribwegure, D., & Vanfleteren, J. R. (2006). A redescription of Eucyclops serrulatus (Fischer, 1851) (Crustacea: Copepoda: Cyclopoida) and some related taxa, with a phylogeny of the E. serrulatus‐group. Zoologica Scripta, 35(2), 123-147.",
+      "imageSourceUrl": "https://doi.org/10.1111/j.1463-6409.2006.00223.x"
+    },
+    "A2g2": {
+      "traitCode": "A2g2",
+      "description": "Spinule group 2 on the A2 coxobasis",
+      "comment": "Number of spinules",
+      "imageUrl": "assets/aistudio/A2Coxobasis_ced8250c.png",
+      "imageSource": "Alekseev, V., Dumont, H. J., Pensaert, J., Baribwegure, D., & Vanfleteren, J. R. (2006). A redescription of Eucyclops serrulatus (Fischer, 1851) (Crustacea: Copepoda: Cyclopoida) and some related taxa, with a phylogeny of the E. serrulatus‐group. Zoologica Scripta, 35(2), 123-147.",
+      "imageSourceUrl": "https://doi.org/10.1111/j.1463-6409.2006.00223.x"
+    },
+    "A2g3": {
+      "traitCode": "A2g3",
+      "description": "Spinule group 3 on the A2 coxobasis",
+      "comment": "Number of spinules",
+      "imageUrl": "assets/aistudio/A2Coxobasis_ced8250c.png",
+      "imageSource": "Alekseev, V., Dumont, H. J., Pensaert, J., Baribwegure, D., & Vanfleteren, J. R. (2006). A redescription of Eucyclops serrulatus (Fischer, 1851) (Crustacea: Copepoda: Cyclopoida) and some related taxa, with a phylogeny of the E. serrulatus‐group. Zoologica Scripta, 35(2), 123-147.",
+      "imageSourceUrl": "https://doi.org/10.1111/j.1463-6409.2006.00223.x"
+    },
+    "A2g8": {
+      "traitCode": "A2g8",
+      "description": "Spinule group 8 on the A2 coxobasis",
+      "comment": "Number of spinules",
+      "imageUrl": "assets/aistudio/A2Coxobasis_ced8250c.png",
+      "imageSource": "Alekseev, V., Dumont, H. J., Pensaert, J., Baribwegure, D., & Vanfleteren, J. R. (2006). A redescription of Eucyclops serrulatus (Fischer, 1851) (Crustacea: Copepoda: Cyclopoida) and some related taxa, with a phylogeny of the E. serrulatus‐group. Zoologica Scripta, 35(2), 123-147.",
+      "imageSourceUrl": "https://doi.org/10.1111/j.1463-6409.2006.00223.x"
+    },
+    "A2g9": {
+      "traitCode": "A2g9",
+      "description": "Spinule group 9 on the A2 coxobasis",
+      "comment": "Number of spinules",
+      "imageUrl": "assets/aistudio/A2Coxobasis_ced8250c.png",
+      "imageSource": "Alekseev, V., Dumont, H. J., Pensaert, J., Baribwegure, D., & Vanfleteren, J. R. (2006). A redescription of Eucyclops serrulatus (Fischer, 1851) (Crustacea: Copepoda: Cyclopoida) and some related taxa, with a phylogeny of the E. serrulatus‐group. Zoologica Scripta, 35(2), 123-147.",
+      "imageSourceUrl": "https://doi.org/10.1111/j.1463-6409.2006.00223.x"
+    },
+    "A2N1g": {
+      "traitCode": "A2N1g",
+      "description": "Group of spinules on the anterior side of A2 Enp1",
+      "comment": "Number of spinules",
+      "imageUrl": "assets/aistudio/A2N1g_5c0fbba3.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "xa/x": {
+      "traitCode": "xa/x",
+      "description": "Morphometric index xa/x (ratio of lengths of structures on P4 Exp3)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "xas/x": {
+      "traitCode": "xas/x",
+      "description": "Morphometric index xas/x (ratio of lengths of structures on P4 Exp3)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "xas/xa": {
+      "traitCode": "xas/xa",
+      "description": "Morphometric index xas/xa (ratio of lengths of structures on P4 Exp3)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "n/ns": {
+      "traitCode": "n/ns",
+      "description": "Morphometric index n/ns (ratio of lengths of structures on P4 Enp3)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "no/n": {
+      "traitCode": "no/n",
+      "description": "Morphometric index no/n (ratio of lengths of structures on P4 Enp3)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "nai/nao": {
+      "traitCode": "nai/nao",
+      "description": "Morphometric index nai/nao (ratio of apical spines on P4 Enp3)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "nai/n": {
+      "traitCode": "nai/n",
+      "description": "Morphometric index nai/n (ratio of inner apical spine to P4 Enp3 length)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "cr/cs": {
+      "traitCode": "cr/cs",
+      "description": "Morphometric index cr/cs (length-to-width ratio of caudal rami)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "crr/cr": {
+      "traitCode": "crr/cr",
+      "description": "Morphometric index crr/cr (relative length of serra on caudal rami)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "cri/cro": {
+      "traitCode": "cri/cro",
+      "description": "Morphometric index cri/cro (inner-to-outer seta ratio on caudal rami)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "cri/cr": {
+      "traitCode": "cri/cr",
+      "description": "Morphometric index cri/cr (inner seta to caudal ramus length ratio)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "cro/cs": {
+      "traitCode": "cro/cs",
+      "description": "Morphometric index cro/cs (outer spine to caudal ramus width ratio)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    },
+    "x/n": {
+      "traitCode": "x/n",
+      "description": "Morphometric index x/n (ratio of P4 Exp3 length to P4 Enp3 length)",
+      "comment": "Decimal fraction (morphometric indices block)",
+      "imageUrl": "assets/aistudio/Metric_92f86a59.png",
+      "imageSource": "Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.",
+      "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
+    }
+  },
+  "speciesMedia": {}
+}

@@ -17,6 +17,31 @@ export interface TraitAnnotation {
   comment: string;
   /** Картинка (одна на все состояния признака) в формате DataURL или URL */
   imageUrl?: string;
+  /** Ссылка на источник / статью, откуда взят рисунок (например: "Alekseev et al., 2006, Fig. 2" или "Novikov et al., 2025") */
+  imageSource?: string;
+  /** Опциональная прямая веб-ссылка (DOI / URL) на статью-источник */
+  imageSourceUrl?: string;
+}
+
+export interface SpeciesMedia {
+  sp: string;
+  /** Сжатое фото самки (♀ Female) в формате WebP DataURL или пути к файлу */
+  femaleImageUrl?: string;
+  /** Подпись / номер препарата для фото самки */
+  femaleCaption?: string;
+  /** Сжатое фото самца (♂ Male) в формате WebP DataURL или пути к файлу */
+  maleImageUrl?: string;
+  /** Подпись / номер препарата для фото самца */
+  maleCaption?: string;
+  /** Ссылка на статью или автора фотографий вида */
+  photoSource?: string;
+}
+
+export interface MediaBundle {
+  version: number;
+  updatedAt: string;
+  traitAnnotations?: Record<string, TraitAnnotation>;
+  speciesMedia?: Record<string, SpeciesMedia>;
 }
 
 export interface TraitDefinition {
@@ -103,6 +128,10 @@ export interface SpeciesSummaryMeta {
 export interface SpeciesProfile {
   /** Species name from column `sp` (e.g. "E. sibiricus") */
   sp: string;
+  /** Author and year of description for valid species (e.g. "Alekseev, 1990" or "(Fischer, 1851)") */
+  authority?: string;
+  /** Taxonomic note or synonymy (e.g. "=E. arcanus arcticus" or "Form A sensu Alekseev et al., 2006") */
+  taxonomicNote?: string;
   /** Species group (e.g. "speratus", "arcanus", "denticulatus", "serrulatus") */
   group: string;
   /** Taxonomic status from bottom summary table */

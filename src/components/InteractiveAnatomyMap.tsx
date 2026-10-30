@@ -657,7 +657,186 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 {isEn ? 'Urosoma' : 'Уросома'}
               </text>
 
-              {/* ==================== 1. CEPHALOTHORAX SHIELD ==================== */}
+              {/* ==================== LAYER 1: BODY SOMITES (POSTERIOR TO ANTERIOR) ==================== */}
+              {/* 12. CAUDAL RAMI (FURCA) */}
+              <g
+                onClick={() => setSelectedPart('CR')}
+                onMouseEnter={() => setHoveredPart('CR')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              >
+                <path
+                  d="M 313 697 L 324 699 L 316 744 Q 310 746 306 742 Z"
+                  fill={getSomiteFill('CR')}
+                  {...getStrokeProps('CR')}
+                />
+                <path
+                  d="M 336 699 L 347 697 L 354 742 Q 350 746 344 744 Z"
+                  fill={getSomiteFill('CR')}
+                  {...getStrokeProps('CR')}
+                />
+                <text
+                  x="430"
+                  y="732"
+                  textAnchor="middle"
+                  className={`text-[14px] font-semibold ${
+                    selectedPart === 'CR' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
+                  }`}
+                >
+                  {isEn ? 'Caudal rami' : 'Каудальные ветви'}
+                </text>
+              </g>
+
+              {/* 11. ABDOMINAL & ANAL SOMITES */}
+              <g
+                onClick={() => setSelectedPart('AnS')}
+                onMouseEnter={() => setHoveredPart('AnS')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              >
+                <path
+                  d="M 314 603 L 346 603 L 352 634 L 308 634 Z"
+                  fill={getSomiteFill('AnS')}
+                  {...getStrokeProps('AnS')}
+                />
+                <path
+                  d="M 314 638 L 346 638 L 351 669 L 309 669 Z"
+                  fill={getSomiteFill('AnS')}
+                  {...getStrokeProps('AnS')}
+                />
+                <path
+                  d="M 316 673 L 344 673 L 347 699 L 336 699 L 330 687 L 324 699 L 313 699 Z"
+                  fill={getSomiteFill('AnS')}
+                  {...getStrokeProps('AnS')}
+                />
+                <text
+                  x="236"
+                  y="694"
+                  textAnchor="middle"
+                  className={`text-[14px] font-semibold ${
+                    selectedPart === 'AnS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
+                  }`}
+                >
+                  {isEn ? 'Anal somite' : 'Анальный сомит'}
+                </text>
+              </g>
+
+              {/* 10. GENITAL SOMITE & P6 */}
+              <g
+                onClick={() => setSelectedPart('GS')}
+                onMouseEnter={() => setHoveredPart('GS')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              >
+                <path
+                  d="M 304 506 Q 330 498 356 506 C 372 518 370 542 361 562 L 355 599 L 305 599 L 299 562 C 290 542 288 518 304 506 Z"
+                  fill={getSomiteFill('GS')}
+                  {...getStrokeProps('GS')}
+                />
+                <line
+                  x1="301"
+                  y1="561"
+                  x2="359"
+                  y2="561"
+                  stroke="#334155"
+                  strokeWidth="1.5"
+                  strokeDasharray="2.5,3.5"
+                />
+                <ellipse
+                  cx="295"
+                  cy="534"
+                  rx="6"
+                  ry="10"
+                  transform="rotate(-12 295 534)"
+                  fill={getAppendageFill('GS')}
+                  {...getStrokeProps('GS')}
+                />
+                <ellipse
+                  cx="365"
+                  cy="534"
+                  rx="6"
+                  ry="10"
+                  transform="rotate(12 365 534)"
+                  fill={getAppendageFill('GS')}
+                  {...getStrokeProps('GS')}
+                />
+                <circle
+                  cx="330"
+                  cy="522"
+                  r="3"
+                  fill={isTraitEntered('GS_m pore') ? '#0284c7' : '#475569'}
+                />
+
+                <text x="394" y="541" className="fill-slate-900 text-[15px] font-bold">
+                  P6
+                </text>
+                <text
+                  x="236"
+                  y="561"
+                  textAnchor="middle"
+                  className={`text-[14px] font-semibold ${
+                    selectedPart === 'GS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
+                  }`}
+                >
+                  {isEn ? 'Genital' : 'Генитальный'}
+                </text>
+                <text
+                  x="236"
+                  y="579"
+                  textAnchor="middle"
+                  className={`text-[14px] font-semibold ${
+                    selectedPart === 'GS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
+                  }`}
+                >
+                  {isEn ? 'somite' : 'сомит'}
+                </text>
+              </g>
+
+              {/* 9a. SOMITE V (T5) SHIELD */}
+              <path
+                d="M 294 456 Q 330 448 366 456 C 387 466 398 486 388 501 Q 330 488 272 501 C 262 486 273 466 294 456 Z"
+                fill={getSomiteFill('P5')}
+                {...getStrokeProps('P5')}
+                onClick={() => setSelectedPart('P5')}
+                onMouseEnter={() => setHoveredPart('P5')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              />
+
+              {/* 8a. SOMITE IV SHIELD */}
+              <path
+                d="M 260 397 L 400 397 C 408 410 410 432 403 445 L 257 445 C 250 432 252 410 260 397 Z"
+                fill={getSomiteFill('P4')}
+                {...getStrokeProps('P4')}
+                onClick={() => setSelectedPart('P4')}
+                onMouseEnter={() => setHoveredPart('P4')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              />
+
+              {/* 7a. SOMITE III SHIELD */}
+              <path
+                d="M 253 331 L 407 331 C 415 346 417 372 410 385 L 250 385 C 243 372 245 346 253 331 Z"
+                fill={getSomiteFill('P3')}
+                {...getStrokeProps('P3')}
+                onClick={() => setSelectedPart('P3')}
+                onMouseEnter={() => setHoveredPart('P3')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              />
+
+              {/* 6a. SOMITE II SHIELD */}
+              <path
+                d="M 251 268 L 409 268 C 417 282 419 306 413 319 L 247 319 C 241 306 243 282 251 268 Z"
+                fill={getSomiteFill('P2')}
+                {...getStrokeProps('P2')}
+                onClick={() => setSelectedPart('P2')}
+                onMouseEnter={() => setHoveredPart('P2')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              />
+
+              {/* 1. CEPHALOTHORAX SHIELD */}
               <g
                 onClick={() => setSelectedPart('Mx1')}
                 onMouseEnter={() => setHoveredPart('Mx1')}
@@ -699,141 +878,317 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 </text>
               </g>
 
-              {/* ==================== 2. ANTENNULES (A1) ==================== */}
-              <g
-                onClick={() => setSelectedPart('A1')}
-                onMouseEnter={() => setHoveredPart('A1')}
-                onMouseLeave={() => setHoveredPart(null)}
-                className="cursor-pointer"
-              >
-                {a1SegmentsLeft.map((seg, idx) => (
-                  <ellipse
-                    key={`a1-l-${idx}`}
-                    cx={seg.cx}
-                    cy={seg.cy}
-                    rx={seg.rx}
-                    ry={seg.ry}
-                    transform={`rotate(${seg.rot} ${seg.cx} ${seg.cy})`}
-                    fill={getAppendageFill('A1')}
-                    {...getStrokeProps('A1')}
-                  />
-                ))}
-                {a1SegmentsRight.map((seg, idx) => (
-                  <ellipse
-                    key={`a1-r-${idx}`}
-                    cx={seg.cx}
-                    cy={seg.cy}
-                    rx={seg.rx}
-                    ry={seg.ry}
-                    transform={`rotate(${seg.rot} ${seg.cx} ${seg.cy})`}
-                    fill={getAppendageFill('A1')}
-                    {...getStrokeProps('A1')}
-                  />
-                ))}
-                <text
-                  x="432"
-                  y="85"
-                  className={`text-[16px] font-bold ${
-                    selectedPart === 'A1' ? 'fill-sky-700' : 'fill-slate-900'
-                  }`}
-                >
-                  A1
-                </text>
-              </g>
+              {/* ==================== LAYER 2: APPENDAGES FROM POSTERIOR (P5) TO ANTERIOR (P1, Mx1, A2, A1) ==================== */}
+              {/* Ordering: P5 (bottom) -> P4 (above P5) -> P3 (above P4) -> P2 (above P3) -> P1 (above P2) */}
 
-              {/* ==================== 3. ANTENNAE (A2) ==================== */}
+              {/* 9b. RUDIMENTARY LEG PAIR P5 (bottom-most thoracic appendage) */}
               <g
-                onClick={() => setSelectedPart('A2')}
-                onMouseEnter={() => setHoveredPart('A2')}
+                onClick={() => setSelectedPart('P5')}
+                onMouseEnter={() => setHoveredPart('P5')}
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
                 <ellipse
-                  cx="296"
-                  cy="134"
-                  rx="11"
-                  ry="7.5"
-                  transform="rotate(35 296 134)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
+                  cx="288"
+                  cy="502"
+                  rx="4.5"
+                  ry="6.5"
+                  fill={getAppendageFill('P5')}
+                  {...getStrokeProps('P5')}
                 />
                 <ellipse
-                  cx="280"
-                  cy="118"
-                  rx="9.5"
-                  ry="6"
-                  transform="rotate(15 280 118)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
+                  cx="372"
+                  cy="502"
+                  rx="4.5"
+                  ry="6.5"
+                  fill={getAppendageFill('P5')}
+                  {...getStrokeProps('P5')}
                 />
-                <ellipse
-                  cx="259"
-                  cy="114"
-                  rx="9.5"
-                  ry="5.5"
-                  transform="rotate(-5 259 114)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
-                />
-                <ellipse
-                  cx="238"
-                  cy="117"
-                  rx="10"
-                  ry="5"
-                  transform="rotate(-15 238 117)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
-                />
-
-                <ellipse
-                  cx="364"
-                  cy="134"
-                  rx="11"
-                  ry="7.5"
-                  transform="rotate(-35 364 134)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
-                />
-                <ellipse
-                  cx="380"
-                  cy="118"
-                  rx="9.5"
-                  ry="6"
-                  transform="rotate(-15 380 118)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
-                />
-                <ellipse
-                  cx="401"
-                  cy="114"
-                  rx="9.5"
-                  ry="5.5"
-                  transform="rotate(5 401 114)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
-                />
-                <ellipse
-                  cx="422"
-                  cy="117"
-                  rx="10"
-                  ry="5"
-                  transform="rotate(15 422 117)"
-                  fill={getAppendageFill('A2')}
-                  {...getStrokeProps('A2')}
-                />
-
                 <text
-                  x="422"
-                  y="142"
+                  x="438"
+                  y="505"
                   className={`text-[15px] font-bold ${
-                    selectedPart === 'A2' ? 'fill-sky-700' : 'fill-slate-900'
+                    selectedPart === 'P5' ? 'fill-sky-700' : 'fill-slate-900'
                   }`}
                 >
-                  A2
+                  P5
                 </text>
               </g>
 
-              {/* ==================== 4. MOUTHPARTS (Md, Mx1, Mx2, Mxp) ==================== */}
+              {/* 8b. LEG PAIR P4 (rendered ABOVE P5) */}
+              <g>
+                <rect
+                  x="274"
+                  y="418"
+                  width="48"
+                  height="17"
+                  rx="7"
+                  fill={getAppendageFill('P4_Cox')}
+                  {...getStrokeProps('P4_Cox')}
+                  onClick={() => setSelectedPart('P4_Cox')}
+                  onMouseEnter={() => setHoveredPart('P4_Cox')}
+                  onMouseLeave={() => setHoveredPart(null)}
+                  className="cursor-pointer"
+                />
+
+                <g
+                  onClick={() => setSelectedPart('P4_IcS')}
+                  onMouseEnter={() => setHoveredPart('P4_IcS')}
+                  onMouseLeave={() => setHoveredPart(null)}
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x="318"
+                    y="419"
+                    width="26"
+                    height="15"
+                    rx="5"
+                    fill={getAppendageFill('P4_IcS')}
+                    {...getStrokeProps('P4_IcS')}
+                  />
+                  <text x="331" y="430" textAnchor="middle" className="fill-slate-950 text-[10px] font-bold pointer-events-none">
+                    IcS
+                  </text>
+                </g>
+
+                <g
+                  onClick={() => setSelectedPart('P4_Cox')}
+                  onMouseEnter={() => setHoveredPart('P4_Cox')}
+                  onMouseLeave={() => setHoveredPart(null)}
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x="341"
+                    y="418"
+                    width="52"
+                    height="17"
+                    rx="7"
+                    fill={getAppendageFill('P4_Cox')}
+                    {...getStrokeProps('P4_Cox')}
+                  />
+                  <text x="367" y="430" textAnchor="middle" className="fill-slate-950 text-[10.5px] font-bold pointer-events-none">
+                    Cox
+                  </text>
+                </g>
+
+                <g
+                  onClick={() => setSelectedPart('P4_Bas')}
+                  onMouseEnter={() => setHoveredPart('P4_Bas')}
+                  onMouseLeave={() => setHoveredPart(null)}
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x="342"
+                    y="436"
+                    width="51"
+                    height="19"
+                    rx="7"
+                    fill={getAppendageFill('P4_Bas')}
+                    {...getStrokeProps('P4_Bas')}
+                  />
+                  <text x="367" y="449" textAnchor="middle" className="fill-slate-950 text-[10.5px] font-bold pointer-events-none">
+                    Bas
+                  </text>
+                </g>
+
+                <g
+                  onClick={() => setSelectedPart('P4_Enp')}
+                  onMouseEnter={() => setHoveredPart('P4_Enp')}
+                  onMouseLeave={() => setHoveredPart(null)}
+                  className="cursor-pointer"
+                >
+                  <ellipse cx="359" cy="464" rx="8.5" ry="9.5" fill={getAppendageFill('P4_Enp')} {...getStrokeProps('P4_Enp')} />
+                  <text x="359" y="468" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
+                    En1
+                  </text>
+                  <ellipse cx="359" cy="484" rx="8.5" ry="9.5" fill={getAppendageFill('P4_Enp')} {...getStrokeProps('P4_Enp')} />
+                  <text x="359" y="488" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
+                    En2
+                  </text>
+                  <ellipse cx="359" cy="504" rx="8.5" ry="9.5" fill={getAppendageFill('P4_Enp')} {...getStrokeProps('P4_Enp')} />
+                  <text x="359" y="508" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
+                    En3
+                  </text>
+                </g>
+
+                <g
+                  onClick={() => setSelectedPart('P4_Exp')}
+                  onMouseEnter={() => setHoveredPart('P4_Exp')}
+                  onMouseLeave={() => setHoveredPart(null)}
+                  className="cursor-pointer"
+                >
+                  <ellipse
+                    cx="390"
+                    cy="460"
+                    rx="8.5"
+                    ry="9.5"
+                    transform="rotate(-15 390 460)"
+                    fill={getAppendageFill('P4_Exp')}
+                    {...getStrokeProps('P4_Exp')}
+                  />
+                  <text x="390" y="464" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
+                    Ex1
+                  </text>
+                  <ellipse
+                    cx="396"
+                    cy="479"
+                    rx="8.5"
+                    ry="9.5"
+                    transform="rotate(-15 396 479)"
+                    fill={getAppendageFill('P4_Exp')}
+                    {...getStrokeProps('P4_Exp')}
+                  />
+                  <text x="396" y="483" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
+                    Ex2
+                  </text>
+                  <ellipse
+                    cx="402"
+                    cy="498"
+                    rx="8.5"
+                    ry="9.5"
+                    transform="rotate(-15 402 498)"
+                    fill={getAppendageFill('P4_Exp')}
+                    {...getStrokeProps('P4_Exp')}
+                  />
+                  <text x="402" y="502" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
+                    Ex3
+                  </text>
+                </g>
+
+                <text
+                  x="438"
+                  y="428"
+                  onClick={() => setSelectedPart('P4')}
+                  className={`text-[15px] font-bold cursor-pointer ${
+                    isSelectedGroup('P4') ? 'fill-sky-700' : 'fill-slate-900'
+                  }`}
+                >
+                  P4
+                </text>
+              </g>
+
+              {/* 7b. LEG PAIR P3 (rendered ABOVE P4) */}
+              <g
+                onClick={() => setSelectedPart('P3')}
+                onMouseEnter={() => setHoveredPart('P3')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              >
+                <rect x="272" y="361" width="50" height="16" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <rect x="318" y="363" width="24" height="12" rx="4" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <rect x="338" y="361" width="50" height="16" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <rect x="272" y="378" width="50" height="17" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+
+                <ellipse cx="270" cy="402" rx="7.5" ry="9" transform="rotate(15 270 402)" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <ellipse cx="265" cy="420" rx="7.5" ry="9" transform="rotate(15 265 420)" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <ellipse cx="260" cy="438" rx="7.5" ry="9" transform="rotate(15 260 438)" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <ellipse cx="303" cy="404" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <ellipse cx="303" cy="422" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+                <ellipse cx="303" cy="440" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
+
+                <text
+                  x="438"
+                  y="369"
+                  className={`text-[15px] font-bold ${
+                    selectedPart === 'P3' ? 'fill-sky-700' : 'fill-slate-900'
+                  }`}
+                >
+                  P3
+                </text>
+              </g>
+
+              {/* 6b. LEG PAIR P2 (rendered ABOVE P3) */}
+              <g
+                onClick={() => setSelectedPart('P2')}
+                onMouseEnter={() => setHoveredPart('P2')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              >
+                <rect x="270" y="294" width="52" height="16" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <rect x="318" y="296" width="24" height="12" rx="4" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <rect x="338" y="294" width="52" height="16" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <rect x="339" y="311" width="51" height="18" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+
+                <ellipse cx="358" cy="338" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <ellipse cx="358" cy="356" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <ellipse cx="358" cy="374" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <ellipse cx="391" cy="336" rx="7.5" ry="9" transform="rotate(-15 391 336)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <ellipse cx="396" cy="354" rx="7.5" ry="9" transform="rotate(-15 396 354)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+                <ellipse cx="402" cy="372" rx="7.5" ry="9" transform="rotate(-15 402 372)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
+
+                <text
+                  x="438"
+                  y="302"
+                  className={`text-[15px] font-bold ${
+                    selectedPart === 'P2' ? 'fill-sky-700' : 'fill-slate-900'
+                  }`}
+                >
+                  P2
+                </text>
+              </g>
+
+              {/* 5. LEG PAIR P1 (rendered ABOVE P2) */}
+              <g
+                onClick={() => setSelectedPart('P1')}
+                onMouseEnter={() => setHoveredPart('P1')}
+                onMouseLeave={() => setHoveredPart(null)}
+                className="cursor-pointer"
+              >
+                <rect
+                  x="270"
+                  y="237"
+                  width="52"
+                  height="16"
+                  rx="7"
+                  fill={getAppendageFill('P1')}
+                  {...getStrokeProps('P1')}
+                />
+                <rect
+                  x="318"
+                  y="239"
+                  width="24"
+                  height="12"
+                  rx="4"
+                  fill={getAppendageFill('P1')}
+                  {...getStrokeProps('P1')}
+                />
+                <rect
+                  x="338"
+                  y="237"
+                  width="52"
+                  height="16"
+                  rx="7"
+                  fill={getAppendageFill('P1')}
+                  {...getStrokeProps('P1')}
+                />
+                <rect
+                  x="269"
+                  y="254"
+                  width="51"
+                  height="17"
+                  rx="7"
+                  fill={getAppendageFill('P1')}
+                  {...getStrokeProps('P1')}
+                />
+                <ellipse cx="268" cy="278" rx="7.5" ry="9" transform="rotate(15 268 278)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+                <ellipse cx="263" cy="296" rx="7.5" ry="9" transform="rotate(15 263 296)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+                <ellipse cx="258" cy="314" rx="7.5" ry="9" transform="rotate(15 258 314)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+                <ellipse cx="301" cy="280" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+                <ellipse cx="301" cy="298" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+                <ellipse cx="301" cy="316" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+
+                <text
+                  x="438"
+                  y="251"
+                  className={`text-[15px] font-bold ${
+                    selectedPart === 'P1' ? 'fill-sky-700' : 'fill-slate-900'
+                  }`}
+                >
+                  P1
+                </text>
+              </g>
+
+              {/* 4. MOUTHPARTS (Md, Mx1, Mx2, Mxp) */}
               <g
                 onClick={() => setSelectedPart('Mx1')}
                 onMouseEnter={() => setHoveredPart('Mx1')}
@@ -967,487 +1322,137 @@ export const InteractiveAnatomyMap: React.FC<InteractiveAnatomyMapProps> = ({
                 </text>
               </g>
 
-              {/* ==================== 5. LEG PAIR P1 ==================== */}
+              {/* 3. ANTENNAE (A2) */}
               <g
-                onClick={() => setSelectedPart('P1')}
-                onMouseEnter={() => setHoveredPart('P1')}
+                onClick={() => setSelectedPart('A2')}
+                onMouseEnter={() => setHoveredPart('A2')}
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                <rect
-                  x="270"
-                  y="237"
-                  width="52"
-                  height="16"
-                  rx="7"
-                  fill={getAppendageFill('P1')}
-                  {...getStrokeProps('P1')}
+                <ellipse
+                  cx="296"
+                  cy="134"
+                  rx="11"
+                  ry="7.5"
+                  transform="rotate(35 296 134)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
                 />
-                <rect
-                  x="318"
-                  y="239"
-                  width="24"
-                  height="12"
-                  rx="4"
-                  fill={getAppendageFill('P1')}
-                  {...getStrokeProps('P1')}
+                <ellipse
+                  cx="280"
+                  cy="118"
+                  rx="9.5"
+                  ry="6"
+                  transform="rotate(15 280 118)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
                 />
-                <rect
-                  x="338"
-                  y="237"
-                  width="52"
-                  height="16"
-                  rx="7"
-                  fill={getAppendageFill('P1')}
-                  {...getStrokeProps('P1')}
+                <ellipse
+                  cx="259"
+                  cy="114"
+                  rx="9.5"
+                  ry="5.5"
+                  transform="rotate(-5 259 114)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
                 />
-                <rect
-                  x="269"
-                  y="254"
-                  width="51"
-                  height="17"
-                  rx="7"
-                  fill={getAppendageFill('P1')}
-                  {...getStrokeProps('P1')}
+                <ellipse
+                  cx="238"
+                  cy="117"
+                  rx="10"
+                  ry="5"
+                  transform="rotate(-15 238 117)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
                 />
-                <ellipse cx="268" cy="278" rx="7.5" ry="9" transform="rotate(15 268 278)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="263" cy="296" rx="7.5" ry="9" transform="rotate(15 263 296)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="258" cy="314" rx="7.5" ry="9" transform="rotate(15 258 314)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="301" cy="280" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="301" cy="298" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="301" cy="316" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
+
+                <ellipse
+                  cx="364"
+                  cy="134"
+                  rx="11"
+                  ry="7.5"
+                  transform="rotate(-35 364 134)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
+                />
+                <ellipse
+                  cx="380"
+                  cy="118"
+                  rx="9.5"
+                  ry="6"
+                  transform="rotate(-15 380 118)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
+                />
+                <ellipse
+                  cx="401"
+                  cy="114"
+                  rx="9.5"
+                  ry="5.5"
+                  transform="rotate(5 401 114)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
+                />
+                <ellipse
+                  cx="422"
+                  cy="117"
+                  rx="10"
+                  ry="5"
+                  transform="rotate(15 422 117)"
+                  fill={getAppendageFill('A2')}
+                  {...getStrokeProps('A2')}
+                />
 
                 <text
-                  x="438"
-                  y="251"
+                  x="422"
+                  y="142"
                   className={`text-[15px] font-bold ${
-                    selectedPart === 'P1' ? 'fill-sky-700' : 'fill-slate-900'
+                    selectedPart === 'A2' ? 'fill-sky-700' : 'fill-slate-900'
                   }`}
                 >
-                  P1
+                  A2
                 </text>
               </g>
 
-              {/* ==================== 6. SOMITE & LEG PAIR P2 ==================== */}
+              {/* 2. ANTENNULES (A1) */}
               <g
-                onClick={() => setSelectedPart('P2')}
-                onMouseEnter={() => setHoveredPart('P2')}
+                onClick={() => setSelectedPart('A1')}
+                onMouseEnter={() => setHoveredPart('A1')}
                 onMouseLeave={() => setHoveredPart(null)}
                 className="cursor-pointer"
               >
-                <path
-                  d="M 251 268 L 409 268 C 417 282 419 306 413 319 L 247 319 C 241 306 243 282 251 268 Z"
-                  fill={getSomiteFill('P2')}
-                  {...getStrokeProps('P2')}
-                />
-                <ellipse cx="268" cy="278" rx="7.5" ry="9" transform="rotate(15 268 278)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="263" cy="296" rx="7.5" ry="9" transform="rotate(15 263 296)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="258" cy="314" rx="7.5" ry="9" transform="rotate(15 258 314)" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="301" cy="280" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="301" cy="298" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-                <ellipse cx="301" cy="316" rx="7.5" ry="9" fill={getAppendageFill('P1')} {...getStrokeProps('P1')} />
-
-                <rect x="270" y="294" width="52" height="16" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <rect x="318" y="296" width="24" height="12" rx="4" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <rect x="338" y="294" width="52" height="16" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <rect x="339" y="311" width="51" height="18" rx="7" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-
-                <text
-                  x="438"
-                  y="302"
-                  className={`text-[15px] font-bold ${
-                    selectedPart === 'P2' ? 'fill-sky-700' : 'fill-slate-900'
-                  }`}
-                >
-                  P2
-                </text>
-              </g>
-
-              {/* ==================== 7. SOMITE & LEG PAIR P3 ==================== */}
-              <g
-                onClick={() => setSelectedPart('P3')}
-                onMouseEnter={() => setHoveredPart('P3')}
-                onMouseLeave={() => setHoveredPart(null)}
-                className="cursor-pointer"
-              >
-                <path
-                  d="M 253 331 L 407 331 C 415 346 417 372 410 385 L 250 385 C 243 372 245 346 253 331 Z"
-                  fill={getSomiteFill('P3')}
-                  {...getStrokeProps('P3')}
-                />
-                <ellipse cx="358" cy="338" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <ellipse cx="358" cy="356" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <ellipse cx="358" cy="374" rx="7.5" ry="9" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <ellipse cx="391" cy="336" rx="7.5" ry="9" transform="rotate(-15 391 336)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <ellipse cx="396" cy="354" rx="7.5" ry="9" transform="rotate(-15 396 354)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-                <ellipse cx="402" cy="372" rx="7.5" ry="9" transform="rotate(-15 402 372)" fill={getAppendageFill('P2')} {...getStrokeProps('P2')} />
-
-                <rect x="272" y="361" width="50" height="16" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                <rect x="318" y="363" width="24" height="12" rx="4" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                <rect x="338" y="361" width="50" height="16" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                <rect x="272" y="378" width="50" height="17" rx="7" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-
-                <text
-                  x="438"
-                  y="369"
-                  className={`text-[15px] font-bold ${
-                    selectedPart === 'P3' ? 'fill-sky-700' : 'fill-slate-900'
-                  }`}
-                >
-                  P3
-                </text>
-              </g>
-
-              {/* ==================== 8. SOMITE & LEG PAIR P4 ==================== */}
-              <g>
-                <path
-                  d="M 260 397 L 400 397 C 408 410 410 432 403 445 L 257 445 C 250 432 252 410 260 397 Z"
-                  fill={getSomiteFill('P4')}
-                  {...getStrokeProps('P4')}
-                  onClick={() => setSelectedPart('P4')}
-                  onMouseEnter={() => setHoveredPart('P4')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                />
-
-                <g
-                  onClick={() => setSelectedPart('P3')}
-                  onMouseEnter={() => setHoveredPart('P3')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                >
-                  <ellipse cx="270" cy="402" rx="7.5" ry="9" transform="rotate(15 270 402)" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                  <ellipse cx="265" cy="420" rx="7.5" ry="9" transform="rotate(15 265 420)" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                  <ellipse cx="260" cy="438" rx="7.5" ry="9" transform="rotate(15 260 438)" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                  <ellipse cx="303" cy="404" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                  <ellipse cx="303" cy="422" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                  <ellipse cx="303" cy="440" rx="7.5" ry="9" fill={getAppendageFill('P3')} {...getStrokeProps('P3')} />
-                </g>
-
-                <rect
-                  x="274"
-                  y="418"
-                  width="48"
-                  height="17"
-                  rx="7"
-                  fill={getAppendageFill('P4_Cox')}
-                  {...getStrokeProps('P4_Cox')}
-                  onClick={() => setSelectedPart('P4_Cox')}
-                  onMouseEnter={() => setHoveredPart('P4_Cox')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                />
-
-                <g
-                  onClick={() => setSelectedPart('P4_IcS')}
-                  onMouseEnter={() => setHoveredPart('P4_IcS')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                >
-                  <rect
-                    x="318"
-                    y="419"
-                    width="26"
-                    height="15"
-                    rx="5"
-                    fill={getAppendageFill('P4_IcS')}
-                    {...getStrokeProps('P4_IcS')}
-                  />
-                  <text x="331" y="430" textAnchor="middle" className="fill-slate-950 text-[10px] font-bold pointer-events-none">
-                    IcS
-                  </text>
-                </g>
-
-                <g
-                  onClick={() => setSelectedPart('P4_Cox')}
-                  onMouseEnter={() => setHoveredPart('P4_Cox')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                >
-                  <rect
-                    x="341"
-                    y="418"
-                    width="52"
-                    height="17"
-                    rx="7"
-                    fill={getAppendageFill('P4_Cox')}
-                    {...getStrokeProps('P4_Cox')}
-                  />
-                  <text x="367" y="430" textAnchor="middle" className="fill-slate-950 text-[10.5px] font-bold pointer-events-none">
-                    Cox
-                  </text>
-                </g>
-
-                <g
-                  onClick={() => setSelectedPart('P4_Bas')}
-                  onMouseEnter={() => setHoveredPart('P4_Bas')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                >
-                  <rect
-                    x="342"
-                    y="436"
-                    width="51"
-                    height="19"
-                    rx="7"
-                    fill={getAppendageFill('P4_Bas')}
-                    {...getStrokeProps('P4_Bas')}
-                  />
-                  <text x="367" y="449" textAnchor="middle" className="fill-slate-950 text-[10.5px] font-bold pointer-events-none">
-                    Bas
-                  </text>
-                </g>
-
-                <text
-                  x="438"
-                  y="428"
-                  onClick={() => setSelectedPart('P4')}
-                  className={`text-[15px] font-bold cursor-pointer ${
-                    isSelectedGroup('P4') ? 'fill-sky-700' : 'fill-slate-900'
-                  }`}
-                >
-                  P4
-                </text>
-              </g>
-
-              {/* ==================== 9. SOMITE 5 (P5) + P4 RAMI ==================== */}
-              <g>
-                <path
-                  d="M 294 456 Q 330 448 366 456 C 387 466 398 486 388 501 Q 330 488 272 501 C 262 486 273 466 294 456 Z"
-                  fill={getSomiteFill('P5')}
-                  {...getStrokeProps('P5')}
-                  onClick={() => setSelectedPart('P5')}
-                  onMouseEnter={() => setHoveredPart('P5')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                />
-                <ellipse
-                  cx="288"
-                  cy="502"
-                  rx="4.5"
-                  ry="6.5"
-                  fill={getAppendageFill('P5')}
-                  {...getStrokeProps('P5')}
-                  onClick={() => setSelectedPart('P5')}
-                  className="cursor-pointer"
-                />
-                <ellipse
-                  cx="372"
-                  cy="502"
-                  rx="4.5"
-                  ry="6.5"
-                  fill={getAppendageFill('P5')}
-                  {...getStrokeProps('P5')}
-                  onClick={() => setSelectedPart('P5')}
-                  className="cursor-pointer"
-                />
-                <text
-                  x="438"
-                  y="505"
-                  onClick={() => setSelectedPart('P5')}
-                  className={`text-[15px] font-bold cursor-pointer ${
-                    selectedPart === 'P5' ? 'fill-sky-700' : 'fill-slate-900'
-                  }`}
-                >
-                  P5
-                </text>
-
-                <g
-                  onClick={() => setSelectedPart('P4_Enp')}
-                  onMouseEnter={() => setHoveredPart('P4_Enp')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                >
-                  <ellipse cx="359" cy="464" rx="8.5" ry="9.5" fill={getAppendageFill('P4_Enp')} {...getStrokeProps('P4_Enp')} />
-                  <text x="359" y="468" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
-                    En1
-                  </text>
-                  <ellipse cx="359" cy="484" rx="8.5" ry="9.5" fill={getAppendageFill('P4_Enp')} {...getStrokeProps('P4_Enp')} />
-                  <text x="359" y="488" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
-                    En2
-                  </text>
-                  <ellipse cx="359" cy="504" rx="8.5" ry="9.5" fill={getAppendageFill('P4_Enp')} {...getStrokeProps('P4_Enp')} />
-                  <text x="359" y="508" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
-                    En3
-                  </text>
-                </g>
-
-                <g
-                  onClick={() => setSelectedPart('P4_Exp')}
-                  onMouseEnter={() => setHoveredPart('P4_Exp')}
-                  onMouseLeave={() => setHoveredPart(null)}
-                  className="cursor-pointer"
-                >
+                {a1SegmentsLeft.map((seg, idx) => (
                   <ellipse
-                    cx="390"
-                    cy="460"
-                    rx="8.5"
-                    ry="9.5"
-                    transform="rotate(-15 390 460)"
-                    fill={getAppendageFill('P4_Exp')}
-                    {...getStrokeProps('P4_Exp')}
+                    key={`a1-l-${idx}`}
+                    cx={seg.cx}
+                    cy={seg.cy}
+                    rx={seg.rx}
+                    ry={seg.ry}
+                    transform={`rotate(${seg.rot} ${seg.cx} ${seg.cy})`}
+                    fill={getAppendageFill('A1')}
+                    {...getStrokeProps('A1')}
                   />
-                  <text x="390" y="464" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
-                    Ex1
-                  </text>
+                ))}
+                {a1SegmentsRight.map((seg, idx) => (
                   <ellipse
-                    cx="396"
-                    cy="479"
-                    rx="8.5"
-                    ry="9.5"
-                    transform="rotate(-15 396 479)"
-                    fill={getAppendageFill('P4_Exp')}
-                    {...getStrokeProps('P4_Exp')}
+                    key={`a1-r-${idx}`}
+                    cx={seg.cx}
+                    cy={seg.cy}
+                    rx={seg.rx}
+                    ry={seg.ry}
+                    transform={`rotate(${seg.rot} ${seg.cx} ${seg.cy})`}
+                    fill={getAppendageFill('A1')}
+                    {...getStrokeProps('A1')}
                   />
-                  <text x="396" y="483" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
-                    Ex2
-                  </text>
-                  <ellipse
-                    cx="402"
-                    cy="498"
-                    rx="8.5"
-                    ry="9.5"
-                    transform="rotate(-15 402 498)"
-                    fill={getAppendageFill('P4_Exp')}
-                    {...getStrokeProps('P4_Exp')}
-                  />
-                  <text x="402" y="502" textAnchor="middle" className="fill-slate-950 text-[9.5px] font-bold pointer-events-none">
-                    Ex3
-                  </text>
-                </g>
-              </g>
-
-              {/* ==================== 10. GENITAL SOMITE & P6 ==================== */}
-              <g
-                onClick={() => setSelectedPart('GS')}
-                onMouseEnter={() => setHoveredPart('GS')}
-                onMouseLeave={() => setHoveredPart(null)}
-                className="cursor-pointer"
-              >
-                <path
-                  d="M 304 506 Q 330 498 356 506 C 372 518 370 542 361 562 L 355 599 L 305 599 L 299 562 C 290 542 288 518 304 506 Z"
-                  fill={getSomiteFill('GS')}
-                  {...getStrokeProps('GS')}
-                />
-                <line
-                  x1="301"
-                  y1="561"
-                  x2="359"
-                  y2="561"
-                  stroke="#334155"
-                  strokeWidth="1.5"
-                  strokeDasharray="2.5,3.5"
-                />
-                <ellipse
-                  cx="295"
-                  cy="534"
-                  rx="6"
-                  ry="10"
-                  transform="rotate(-12 295 534)"
-                  fill={getAppendageFill('GS')}
-                  {...getStrokeProps('GS')}
-                />
-                <ellipse
-                  cx="365"
-                  cy="534"
-                  rx="6"
-                  ry="10"
-                  transform="rotate(12 365 534)"
-                  fill={getAppendageFill('GS')}
-                  {...getStrokeProps('GS')}
-                />
-                <circle
-                  cx="330"
-                  cy="522"
-                  r="3"
-                  fill={isTraitEntered('GS_m pore') ? '#0284c7' : '#475569'}
-                />
-
-                <text x="394" y="541" className="fill-slate-900 text-[15px] font-bold">
-                  P6
-                </text>
+                ))}
                 <text
-                  x="236"
-                  y="561"
-                  textAnchor="middle"
-                  className={`text-[14px] font-semibold ${
-                    selectedPart === 'GS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
+                  x="432"
+                  y="85"
+                  className={`text-[16px] font-bold ${
+                    selectedPart === 'A1' ? 'fill-sky-700' : 'fill-slate-900'
                   }`}
                 >
-                  {isEn ? 'Genital' : 'Генитальный'}
-                </text>
-                <text
-                  x="236"
-                  y="579"
-                  textAnchor="middle"
-                  className={`text-[14px] font-semibold ${
-                    selectedPart === 'GS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
-                  }`}
-                >
-                  {isEn ? 'somite' : 'сомит'}
-                </text>
-              </g>
-
-              {/* ==================== 11. ABDOMINAL & ANAL SOMITES ==================== */}
-              <g
-                onClick={() => setSelectedPart('AnS')}
-                onMouseEnter={() => setHoveredPart('AnS')}
-                onMouseLeave={() => setHoveredPart(null)}
-                className="cursor-pointer"
-              >
-                <path
-                  d="M 314 603 L 346 603 L 352 634 L 308 634 Z"
-                  fill={getSomiteFill('AnS')}
-                  {...getStrokeProps('AnS')}
-                />
-                <path
-                  d="M 314 638 L 346 638 L 351 669 L 309 669 Z"
-                  fill={getSomiteFill('AnS')}
-                  {...getStrokeProps('AnS')}
-                />
-                <path
-                  d="M 316 673 L 344 673 L 347 699 L 336 699 L 330 687 L 324 699 L 313 699 Z"
-                  fill={getSomiteFill('AnS')}
-                  {...getStrokeProps('AnS')}
-                />
-                <text
-                  x="236"
-                  y="694"
-                  textAnchor="middle"
-                  className={`text-[14px] font-semibold ${
-                    selectedPart === 'AnS' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
-                  }`}
-                >
-                  {isEn ? 'Anal somite' : 'Анальный сомит'}
-                </text>
-              </g>
-
-              {/* ==================== 12. CAUDAL RAMI (FURCA) ==================== */}
-              <g
-                onClick={() => setSelectedPart('CR')}
-                onMouseEnter={() => setHoveredPart('CR')}
-                onMouseLeave={() => setHoveredPart(null)}
-                className="cursor-pointer"
-              >
-                <path
-                  d="M 313 697 L 324 699 L 316 744 Q 310 746 306 742 Z"
-                  fill={getSomiteFill('CR')}
-                  {...getStrokeProps('CR')}
-                />
-                <path
-                  d="M 336 699 L 347 697 L 354 742 Q 350 746 344 744 Z"
-                  fill={getSomiteFill('CR')}
-                  {...getStrokeProps('CR')}
-                />
-                <text
-                  x="430"
-                  y="732"
-                  textAnchor="middle"
-                  className={`text-[14px] font-semibold ${
-                    selectedPart === 'CR' ? 'fill-sky-700 font-bold' : 'fill-slate-900'
-                  }`}
-                >
-                  {isEn ? 'Caudal rami' : 'Каудальные ветви'}
+                  A1
                 </text>
               </g>
             </svg>

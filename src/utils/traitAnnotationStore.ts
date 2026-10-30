@@ -118,6 +118,17 @@ export function formatQualitativeStateLabel(
   return String(stateVal);
 }
 
+const A2_COXOBASIS_IMAGE = 'assets/aistudio/A2Coxobasis_ced8250c.png';
+const A2_COXOBASIS_CITATION =
+  'Alekseev, V., Dumont, H. J., Pensaert, J., Baribwegure, D., & Vanfleteren, J. R. (2006). A redescription of Eucyclops serrulatus (Fischer, 1851) (Crustacea: Copepoda: Cyclopoida) and some related taxa, with a phylogeny of the E. serrulatus‐group. Zoologica Scripta, 35(2), 123-147.';
+const A2_COXOBASIS_DOI = 'https://doi.org/10.1111/j.1463-6409.2006.00223.x';
+
+const A2N1G_IMAGE = 'assets/aistudio/A2N1g_5c0fbba3.png';
+const METRIC_IMAGE = 'assets/aistudio/Metric_92f86a59.png';
+const NOVIKOV_2025_CITATION =
+  'Novikov, A., Sharafutdinova, D., Abramova, E., Mayor, T., & Chertoprud, E. (2025). An integrative approach to the delimitation of pseudocryptic species in the Eucyclops speratus complex (Copepoda, Cyclopoida) with a description of a new species. ZooKeys, 1226, 217.';
+const NOVIKOV_2025_DOI = 'https://doi.org/10.3897/zookeys.1226.138389';
+
 /**
  * Built-in English trait descriptions and comments (exact terminology from the author's table).
  */
@@ -126,31 +137,49 @@ export const BUILTIN_TRAIT_ANNOTATIONS_EN: Record<string, TraitAnnotation> = {
     traitCode: 'A2g1',
     description: 'Spinule group 1 on the antennal (A2) coxobasis',
     comment: 'Number of spinules',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g2: {
     traitCode: 'A2g2',
     description: 'Spinule group 2 on the A2 coxobasis',
     comment: 'Number of spinules',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g3: {
     traitCode: 'A2g3',
     description: 'Spinule group 3 on the A2 coxobasis',
     comment: 'Number of spinules',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g8: {
     traitCode: 'A2g8',
     description: 'Spinule group 8 on the A2 coxobasis',
     comment: 'Number of spinules',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g9: {
     traitCode: 'A2g9',
     description: 'Spinule group 9 on the A2 coxobasis',
     comment: 'Number of spinules',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2N1g: {
     traitCode: 'A2N1g',
     description: 'Group of spinules on the anterior side of A2 Enp1',
     comment: 'Number of spinules',
+    imageUrl: A2N1G_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   A2N1g2: {
     traitCode: 'A2N1g2',
@@ -401,66 +430,105 @@ export const BUILTIN_TRAIT_ANNOTATIONS_EN: Record<string, TraitAnnotation> = {
     traitCode: 'xa/x',
     description: 'Morphometric index xa/x (ratio of lengths of structures on P4 Exp3)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'xas/x': {
     traitCode: 'xas/x',
     description: 'Morphometric index xas/x (ratio of lengths of structures on P4 Exp3)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'xas/xa': {
     traitCode: 'xas/xa',
     description: 'Morphometric index xas/xa (ratio of lengths of structures on P4 Exp3)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'n/ns': {
     traitCode: 'n/ns',
     description: 'Morphometric index n/ns (ratio of lengths of structures on P4 Enp3)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'no/n': {
     traitCode: 'no/n',
     description: 'Morphometric index no/n (ratio of lengths of structures on P4 Enp3)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'nai/nao': {
     traitCode: 'nai/nao',
     description: 'Morphometric index nai/nao (ratio of apical spines on P4 Enp3)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'nai/n': {
     traitCode: 'nai/n',
     description: 'Morphometric index nai/n (ratio of inner apical spine to P4 Enp3 length)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cr/cs': {
     traitCode: 'cr/cs',
     description: 'Morphometric index cr/cs (length-to-width ratio of caudal rami)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'crr/cr': {
     traitCode: 'crr/cr',
     description: 'Morphometric index crr/cr (relative length of serra on caudal rami)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cri/cro': {
     traitCode: 'cri/cro',
     description: 'Morphometric index cri/cro (inner-to-outer seta ratio on caudal rami)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cri/cr': {
     traitCode: 'cri/cr',
     description: 'Morphometric index cri/cr (inner seta to caudal ramus length ratio)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cro/cs': {
     traitCode: 'cro/cs',
     description: 'Morphometric index cro/cs (outer spine to caudal ramus width ratio)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'x/n': {
     traitCode: 'x/n',
     description: 'Morphometric index x/n (ratio of P4 Exp3 length to P4 Enp3 length)',
     comment: 'Decimal fraction (morphometric indices block)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
 };
 
@@ -472,31 +540,49 @@ export const BUILTIN_TRAIT_ANNOTATIONS_RU: Record<string, TraitAnnotation> = {
     traitCode: 'A2g1',
     description: 'Группа шипиков g1 на коксобазисе А2',
     comment: 'Число шипиков',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g2: {
     traitCode: 'A2g2',
     description: 'Группа шипиков g2 на коксобазисе А2',
     comment: 'Число шипиков',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g3: {
     traitCode: 'A2g3',
     description: 'Группа шипиков g3 на коксобазисе А2',
     comment: 'Число шипиков',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g8: {
     traitCode: 'A2g8',
     description: 'Группа шипиков g8 на коксобазисе А2',
     comment: 'Число шипиков',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2g9: {
     traitCode: 'A2g9',
     description: 'Группа шипиков g9 на коксобазисе А2',
     comment: 'Число шипиков',
+    imageUrl: A2_COXOBASIS_IMAGE,
+    imageSource: A2_COXOBASIS_CITATION,
+    imageSourceUrl: A2_COXOBASIS_DOI,
   },
   A2N1g: {
     traitCode: 'A2N1g',
     description: 'Группа шипиков на передней стороне Enp1 А2',
     comment: 'Число шипиков',
+    imageUrl: A2N1G_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   A2N1g2: {
     traitCode: 'A2N1g2',
@@ -747,66 +833,105 @@ export const BUILTIN_TRAIT_ANNOTATIONS_RU: Record<string, TraitAnnotation> = {
     traitCode: 'xa/x',
     description: 'Морфометрический индекс xa/x (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'xas/x': {
     traitCode: 'xas/x',
     description: 'Морфометрический индекс xas/x (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'xas/xa': {
     traitCode: 'xas/xa',
     description: 'Морфометрический индекс xas/xa (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'n/ns': {
     traitCode: 'n/ns',
     description: 'Морфометрический индекс n/ns (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'no/n': {
     traitCode: 'no/n',
     description: 'Морфометрический индекс no/n (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'nai/nao': {
     traitCode: 'nai/nao',
     description: 'Морфометрический индекс nai/nao (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'nai/n': {
     traitCode: 'nai/n',
     description: 'Морфометрический индекс nai/n (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cr/cs': {
     traitCode: 'cr/cs',
     description: 'Морфометрический индекс cr/cs (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'crr/cr': {
     traitCode: 'crr/cr',
     description: 'Морфометрический индекс crr/cr (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cri/cro': {
     traitCode: 'cri/cro',
     description: 'Морфометрический индекс cri/cro (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cri/cr': {
     traitCode: 'cri/cr',
     description: 'Морфометрический индекс cri/cr (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'cro/cs': {
     traitCode: 'cro/cs',
     description: 'Морфометрический индекс cro/cs (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
   'x/n': {
     traitCode: 'x/n',
     description: 'Морфометрический индекс x/n (соотношение длин структур)',
     comment: 'Десятичные дроби (блок морфометрических индексов)',
+    imageUrl: METRIC_IMAGE,
+    imageSource: NOVIKOV_2025_CITATION,
+    imageSourceUrl: NOVIKOV_2025_DOI,
   },
 };
 
@@ -879,7 +1004,9 @@ export function loadTraitAnnotations(): Record<string, TraitAnnotation> {
             traitCode: code,
             description: ann.description?.trim() ? ann.description : builtin?.description || '',
             comment: ann.comment?.trim() ? ann.comment : builtin?.comment || '',
-            imageUrl: ann.imageUrl,
+            imageUrl: ann.imageUrl || builtin?.imageUrl,
+            imageSource: ann.imageSource || builtin?.imageSource,
+            imageSourceUrl: ann.imageSourceUrl || builtin?.imageSourceUrl,
           };
         }
       }
@@ -898,53 +1025,72 @@ export function saveTraitAnnotations(annotations: Record<string, TraitAnnotation
   }
 }
 
+/**
+ * High-efficiency client-side image compressor using URL.createObjectURL + Canvas WebP.
+ * Handles 30+ MB microscope photographs without memory spikes, shrinking them to ~120-250 KB.
+ */
 export function compressImageFileToDataUrl(
   file: File | Blob,
-  maxDimension = 1100,
+  maxDimension = 1400,
   quality = 0.84
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Error reading image file'));
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const img = new Image();
-      img.onerror = () => resolve(dataUrl);
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDimension || height > maxDimension) {
-          if (width >= height) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          } else {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(dataUrl);
-          return;
-        }
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        try {
-          const compressed = canvas.toDataURL('image/webp', quality);
-          if (compressed && compressed.startsWith('data:image/')) {
-            resolve(compressed);
-          } else {
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          }
-        } catch {
-          resolve(dataUrl);
-        }
-      };
-      img.src = dataUrl;
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to decode image file'));
     };
-    reader.readAsDataURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width >= height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context unavailable'));
+        return;
+      }
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      try {
+        const compressed = canvas.toDataURL('image/webp', quality);
+        if (compressed && compressed.startsWith('data:image/')) {
+          resolve(compressed);
+        } else {
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    };
+    img.src = objectUrl;
   });
+}
+
+/**
+ * Estimates byte size of a DataURL string.
+ */
+export function estimateDataUrlByteSize(dataUrl: string): number {
+  const base64Index = dataUrl.indexOf(',');
+  if (base64Index === -1) return dataUrl.length;
+  const base64Length = dataUrl.length - (base64Index + 1);
+  return Math.round((base64Length * 3) / 4);
+}
+
+export function formatByteSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Globe, Mail } from 'lucide-react';
+import { Globe, Mail, FolderUp } from 'lucide-react';
 import { DEFAULT_EUCYCLOPS_CSV } from './data/rawCsvData';
 import {
   KeyConfig,
+  MediaBundle,
   SpeciesCandidateEvaluation,
+  SpeciesMedia,
   SpeciesProfile,
   SpecimenRecord,
   TraitAnnotation,
@@ -21,6 +23,10 @@ import {
   loadTraitAnnotations,
   saveTraitAnnotations,
 } from './utils/traitAnnotationStore';
+import {
+  loadSpeciesMediaMap,
+  saveSpeciesMediaMap,
+} from './data/speciesMetadata';
 import { translateRegion, useLanguage } from './utils/i18n';
 import { PolyclaveKeyWorkspace } from './components/PolyclaveKeyWorkspace';
 import { DifferentialMatrixView } from './components/DifferentialMatrixView';
@@ -28,6 +34,7 @@ import { AboutKeyView } from './components/AboutKeyView';
 import { SpeciesDetailModal } from './components/SpeciesDetailModal';
 import { TraitInspectorModal } from './components/TraitInspectorModal';
 import { AddSpecimenModal } from './components/AddSpecimenModal';
+import { MediaBatchModal } from './components/MediaBatchModal';
 
 type WorkspaceTab = 'key' | 'differential' | 'about';
 
@@ -58,6 +65,9 @@ export default function App() {
   const [traitAnnotations, setTraitAnnotations] = useState<Record<string, TraitAnnotation>>(() =>
     loadTraitAnnotations()
   );
+  const [speciesMediaMap, setSpeciesMediaMap] = useState<Record<string, SpeciesMedia>>(() =>
+    loadSpeciesMediaMap()
+  );
 
   const [selectedSpeciesModal, setSelectedSpeciesModal] = useState<{
     species: SpeciesProfile;
@@ -66,6 +76,7 @@ export default function App() {
 
   const [inspectedTrait, setInspectedTrait] = useState<TraitDefinition | null>(null);
   const [isAddSpecimenModalOpen, setIsAddSpecimenModalOpen] = useState<boolean>(false);
+  const [isBatchMediaModalOpen, setIsBatchMediaModalOpen] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const annotationsImportRef = useRef<HTMLInputElement | null>(null);
@@ -85,6 +96,45 @@ export default function App() {
       })
       .catch(() => {
         // Embedded DEFAULT_EUCYCLOPS_CSV is already loaded synchronously
+      });
+  }, []);
+
+  // Automatically load public/assets/media_bundle.json (if present in GitHub Pages repo)
+  useEffect(() => {
+    const bundleUrl = `${import.meta.env.BASE_URL}assets/media_bundle.json`;
+    fetch(bundleUrl)
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('No external media bundle');
+      })
+      .then((bundle: MediaBundle) => {
+        if (bundle && typeof bundle === 'object') {
+          if (bundle.traitAnnotations && Object.keys(bundle.traitAnnotations).length > 0) {
+            setTraitAnnotations((prev) => {
+              const merged = { ...prev };
+              for (const [code, ann] of Object.entries(bundle.traitAnnotations!)) {
+                merged[code] = {
+                  ...merged[code],
+                  ...ann,
+                  // Prefer user's local overrides if they edited after bundle
+                  imageUrl: merged[code]?.imageUrl || ann.imageUrl,
+                  imageSource: merged[code]?.imageSource || ann.imageSource,
+                  imageSourceUrl: merged[code]?.imageSourceUrl || ann.imageSourceUrl,
+                };
+              }
+              return merged;
+            });
+          }
+          if (bundle.speciesMedia && Object.keys(bundle.speciesMedia).length > 0) {
+            setSpeciesMediaMap((prev) => ({
+              ...bundle.speciesMedia,
+              ...prev,
+            }));
+          }
+        }
+      })
+      .catch(() => {
+        // Ignore if media_bundle.json is empty or not found
       });
   }, []);
 
@@ -150,34 +200,75 @@ export default function App() {
     });
   };
 
-  const handleExportAnnotationsJson = () => {
-    const blob = new Blob([JSON.stringify(traitAnnotations, null, 2)], {
+  const handleUpdateTraitAnnotationsBatch = (nextMap: Record<string, TraitAnnotation>) => {
+    setTraitAnnotations(nextMap);
+    saveTraitAnnotations(nextMap);
+  };
+
+  const handleSaveSpeciesMedia = (sp: string, media: SpeciesMedia) => {
+    setSpeciesMediaMap((prev) => {
+      const updated = { ...prev, [sp]: media };
+      saveSpeciesMediaMap(updated);
+      return updated;
+    });
+  };
+
+  const handleUpdateSpeciesMediaBatch = (nextMap: Record<string, SpeciesMedia>) => {
+    setSpeciesMediaMap(nextMap);
+    saveSpeciesMediaMap(nextMap);
+  };
+
+  const handleExportMediaBundle = () => {
+    const bundle: MediaBundle = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      traitAnnotations,
+      speciesMedia: speciesMediaMap,
+    };
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'eucyclops_traits_annotations.json';
+    a.download = 'media_bundle.json';
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleImportAnnotationsJson = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImportMediaBundleFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target?.result as string);
         if (parsed && typeof parsed === 'object') {
-          setTraitAnnotations(parsed);
-          saveTraitAnnotations(parsed);
+          if ('traitAnnotations' in parsed || 'speciesMedia' in parsed) {
+            const bundle = parsed as MediaBundle;
+            if (bundle.traitAnnotations) {
+              setTraitAnnotations(bundle.traitAnnotations);
+              saveTraitAnnotations(bundle.traitAnnotations);
+            }
+            if (bundle.speciesMedia) {
+              setSpeciesMediaMap(bundle.speciesMedia);
+              saveSpeciesMediaMap(bundle.speciesMedia);
+            }
+          } else {
+            // Backward compatibility with plain traitAnnotations JSON
+            setTraitAnnotations(parsed as Record<string, TraitAnnotation>);
+            saveTraitAnnotations(parsed as Record<string, TraitAnnotation>);
+          }
         }
       } catch {
         // ignore invalid json
       }
     };
     reader.readAsText(file, 'utf-8');
+  };
+
+  const handleImportAnnotationsJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handleImportMediaBundleFile(file);
   };
 
   const handleUpdateFilter = (traitCode: string, filter: UserTraitFilter | null) => {
@@ -333,8 +424,8 @@ export default function App() {
           </a>
         </nav>
 
-        {/* Zone 3: Language Switcher (EN / RU) + Primary Action */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Zone 3: Language Switcher + Batch Media + CSV Upload */}
+        <div className="flex items-center gap-2.5 shrink-0">
           {/* Language Switcher Pill */}
           <div
             className="inline-flex items-center rounded-lg border border-slate-300 bg-slate-100 p-0.5 text-xs font-bold"
@@ -377,9 +468,9 @@ export default function App() {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            {isEn ? 'Upload CSV Matrix' : 'Загрузить CSV матрицу'}
+            {isEn ? 'Upload CSV' : 'Загрузить CSV'}
           </button>
         </div>
       </header>
@@ -487,7 +578,7 @@ export default function App() {
               onClick={() => setIsAddSpecimenModalOpen(true)}
               className="hover:text-slate-900 underline font-medium text-sky-800 cursor-pointer"
             >
-              {isEn ? '+ Add Specimens to Database' : '+ Добавить особей в базу'}
+              {isEn ? '+ Add Specimens' : '+ Добавить особей'}
             </button>
             <span>·</span>
             <button
@@ -495,22 +586,20 @@ export default function App() {
               className="hover:text-slate-900 underline cursor-pointer"
             >
               {isEn
-                ? `Download CSV Matrix (${dataset.specimens.length} spec.)`
-                : `Скачать CSV матрицу (${dataset.specimens.length} экз.)`}
+                ? `Download CSV (${dataset.specimens.length} spec.)`
+                : `Скачать CSV (${dataset.specimens.length} экз.)`}
             </button>
             <span>·</span>
             <button
-              onClick={handleExportAnnotationsJson}
-              className="hover:text-slate-900 underline cursor-pointer"
+              onClick={() => setIsBatchMediaModalOpen(true)}
+              className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              title={
+                isEn
+                  ? 'Author tool: batch compress species photos & trait figures and export media_bundle.json'
+                  : 'Инструмент автора базы: пакетное сжатие фото видов и рисунков признаков, экспорт media_bundle.json'
+              }
             >
-              {isEn ? 'Export Annotations (.json)' : 'Экспорт описаний (.json)'}
-            </button>
-            <span>·</span>
-            <button
-              onClick={() => annotationsImportRef.current?.click()}
-              className="hover:text-slate-900 underline cursor-pointer"
-            >
-              {isEn ? 'Import Annotations (.json)' : 'Импорт описаний (.json)'}
+              {isEn ? '⚙ Author media tool' : '⚙ Медиа-база (для автора)'}
             </button>
           </div>
         </div>
@@ -524,20 +613,24 @@ export default function App() {
           evaluation={selectedSpeciesModal.evaluation}
           traits={dataset.traits}
           traitAnnotations={traitAnnotations}
+          speciesMedia={speciesMediaMap[selectedSpeciesModal.species.sp]}
           config={config}
           activeFilters={activeFilters}
+          onSaveSpeciesMedia={handleSaveSpeciesMedia}
+          onOpenBatchMediaModal={() => setIsBatchMediaModalOpen(true)}
           onClose={() => setSelectedSpeciesModal(null)}
           onOpenTraitInspector={(trait) => setInspectedTrait(trait)}
           onLoadSpecimenIntoKey={handleLoadSpecimenIntoKey}
         />
       )}
 
-      {/* Trait Inspector Modal (Image, Human-Language Description, and Comment) */}
+      {/* Trait Inspector Modal (Image, Article Citation, Description, and Comment) */}
       {inspectedTrait && (
         <TraitInspectorModal
           trait={inspectedTrait}
           annotation={traitAnnotations[inspectedTrait.code]}
           onSaveAnnotation={handleSaveTraitAnnotation}
+          onOpenBatchMediaModal={() => setIsBatchMediaModalOpen(true)}
           onClose={() => setInspectedTrait(null)}
         />
       )}
@@ -557,7 +650,21 @@ export default function App() {
           onClose={() => setIsAddSpecimenModalOpen(false)}
         />
       )}
+
+      {/* Batch Folder Upload & Heavy Photo Compressor Modal */}
+      {isBatchMediaModalOpen && (
+        <MediaBatchModal
+          speciesList={dataset.speciesList}
+          traits={dataset.traits}
+          traitAnnotations={traitAnnotations}
+          speciesMediaMap={speciesMediaMap}
+          onUpdateTraitAnnotationsBatch={handleUpdateTraitAnnotationsBatch}
+          onUpdateSpeciesMediaBatch={handleUpdateSpeciesMediaBatch}
+          onExportMediaBundle={handleExportMediaBundle}
+          onImportMediaBundleFile={handleImportMediaBundleFile}
+          onClose={() => setIsBatchMediaModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
-
