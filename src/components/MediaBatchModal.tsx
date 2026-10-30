@@ -23,6 +23,7 @@ import {
   matchTraitsFromFilename,
 } from '../data/speciesMetadata';
 import {
+  BUILTIN_TRAIT_ANNOTATIONS_EN,
   compressImageFileToDataUrl,
   estimateDataUrlByteSize,
   formatByteSize,
@@ -78,7 +79,7 @@ export const MediaBatchModal: React.FC<MediaBatchModalProps> = ({
   const { lang } = useLanguage();
   const isEn = lang === 'en';
 
-  const [activeTab, setActiveTab] = useState<'species_photos' | 'trait_drawings'>('species_photos');
+  const [activeTab, setActiveTab] = useState<'species_photos' | 'trait_drawings'>('trait_drawings');
   const [maxDimension, setMaxDimension] = useState<number>(1600);
   const [webpQuality, setWebpQuality] = useState<number>(0.85);
 
@@ -166,15 +167,27 @@ export const MediaBatchModal: React.FC<MediaBatchModalProps> = ({
         const dataUrl = await compressImageFileToDataUrl(file, maxDimension, webpQuality);
         const compressedBytes = estimateDataUrlByteSize(dataUrl);
         const matchedCodes = matchTraitsFromFilename(file.name, allTraitCodes);
+        const finalCodes = matchedCodes.length > 0 ? matchedCodes : [allTraitCodes[0]];
+        const primaryCode = finalCodes[0];
+        const builtinAnn = BUILTIN_TRAIT_ANNOTATIONS_EN[primaryCode];
+        const existingAnn = traitAnnotations[primaryCode];
         results.push({
           id: `${file.name}-${i}-${Date.now()}`,
           fileName: file.name,
           originalBytes: file.size,
           compressedBytes,
           dataUrl,
-          matchedTraitCodes: matchedCodes.length > 0 ? matchedCodes : [allTraitCodes[0]],
-          imageSource: defaultTraitSource,
-          imageSourceUrl: defaultTraitSourceUrl,
+          matchedTraitCodes: finalCodes,
+          imageSource:
+            defaultTraitSource ||
+            existingAnn?.imageSource ||
+            builtinAnn?.imageSource ||
+            '',
+          imageSourceUrl:
+            defaultTraitSourceUrl ||
+            existingAnn?.imageSourceUrl ||
+            builtinAnn?.imageSourceUrl ||
+            '',
         });
       } catch {
         // skip unreadable file
@@ -185,13 +198,22 @@ export const MediaBatchModal: React.FC<MediaBatchModalProps> = ({
     setIsProcessing(false);
   };
 
-  const handleApplyStagedSpeciesPhotos = () => {
+  const handleApplyStagedSpeciesPhotos = async () => {
     if (stagedSpeciesPhotos.length === 0) return;
     const nextMap: Record<string, SpeciesMedia> = { ...speciesMediaMap };
+    const repoFilesToWrite: Array<{ relPath: string; dataUrl: string }> = [];
 
     for (const item of stagedSpeciesPhotos) {
       if (!item.matchedSp) continue;
       const existing: SpeciesMedia = nextMap[item.matchedSp] || { sp: item.matchedSp };
+      const cleanSp = item.matchedSp
+        .replace(/^E\.\s*/i, '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, '_');
+      const sexSuffix = item.sex === 'female' ? 'F' : 'M';
+      const relPath = `assets/species/${cleanSp}_${sexSuffix}.webp`;
+      repoFilesToWrite.push({ relPath, dataUrl: item.dataUrl });
+
       const updated: SpeciesMedia = {
         ...existing,
         sp: item.matchedSp,
@@ -207,44 +229,139 @@ export const MediaBatchModal: React.FC<MediaBatchModalProps> = ({
       nextMap[item.matchedSp] = updated;
     }
 
+    let savedToRepo = false;
+    try {
+      const repoMap: Record<string, SpeciesMedia> = { ...nextMap };
+      for (const item of stagedSpeciesPhotos) {
+        if (!item.matchedSp) continue;
+        const cleanSp = item.matchedSp
+          .replace(/^E\.\s*/i, '')
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]+/g, '_');
+        const sexSuffix = item.sex === 'female' ? 'F' : 'M';
+        const relPath = `assets/species/${cleanSp}_${sexSuffix}.webp`;
+        if (item.sex === 'female') {
+          repoMap[item.matchedSp] = { ...repoMap[item.matchedSp], femaleImageUrl: relPath };
+        } else {
+          repoMap[item.matchedSp] = { ...repoMap[item.matchedSp], maleImageUrl: relPath };
+        }
+      }
+      const res = await fetch('/api/save-repo-assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: repoFilesToWrite,
+          mediaBundle: {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            traitAnnotations,
+            speciesMedia: repoMap,
+          },
+        }),
+      });
+      if (res.ok) {
+        savedToRepo = true;
+        for (const [spKey, val] of Object.entries(repoMap)) {
+          nextMap[spKey] = val;
+        }
+      }
+    } catch {
+      // Fallback to localStorage dataUrls if static environment
+    }
+
     onUpdateSpeciesMediaBatch(nextMap);
     setAppliedBanner(
-      isEn
-        ? `Saved ${stagedSpeciesPhotos.length} compressed species photo(s) to database! Don't forget to download media_bundle.json for GitHub.`
-        : `В карточки видов сохранено ${stagedSpeciesPhotos.length} сжатых фото! Чтобы они появились на GitHub Pages, скачайте файл media_bundle.json внизу окна.`
+      savedToRepo
+        ? isEn
+          ? `Saved ${stagedSpeciesPhotos.length} compressed species photo(s) directly to the repository (public/assets/species/ & media_bundle.json)!`
+          : `Все ${stagedSpeciesPhotos.length} сжатых фото видов напрямую записаны в репозиторий (public/assets/species/ и public/assets/media_bundle.json)!`
+        : isEn
+        ? `Saved ${stagedSpeciesPhotos.length} compressed species photo(s) to database! Download media_bundle.json for GitHub.`
+        : `В карточки видов сохранено ${stagedSpeciesPhotos.length} сжатых фото! Скачайте файл media_bundle.json внизу окна.`
     );
     setStagedSpeciesPhotos([]);
   };
 
-  const handleApplyStagedTraitDrawings = () => {
+  const handleApplyStagedTraitDrawings = async () => {
     if (stagedTraitDrawings.length === 0) return;
     const nextAnnotations: Record<string, TraitAnnotation> = { ...traitAnnotations };
+    const repoFilesToWrite: Array<{ relPath: string; dataUrl: string }> = [];
+    const fileRelPathByItemId: Record<string, string> = {};
     let countAssigned = 0;
 
     for (const item of stagedTraitDrawings) {
+      const cleanBase = item.fileName
+        .replace(/\.[^.]+$/, '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, '_');
+      const relPath = `assets/traits/${cleanBase}.webp`;
+      repoFilesToWrite.push({ relPath, dataUrl: item.dataUrl });
+      fileRelPathByItemId[item.id] = relPath;
+
       const src = item.imageSource.trim() || defaultTraitSource.trim() || undefined;
       const srcUrl = item.imageSourceUrl.trim() || defaultTraitSourceUrl.trim() || undefined;
       for (const code of item.matchedTraitCodes) {
         if (!code) continue;
+        const builtinAnn = BUILTIN_TRAIT_ANNOTATIONS_EN[code];
         const existing = nextAnnotations[code] || {
           traitCode: code,
-          description: '',
-          comment: '',
+          description: builtinAnn?.description || '',
+          comment: builtinAnn?.comment || '',
         };
         nextAnnotations[code] = {
           ...existing,
           traitCode: code,
           imageUrl: item.dataUrl,
-          imageSource: src || existing.imageSource,
-          imageSourceUrl: srcUrl || existing.imageSourceUrl,
+          imageSource: src || existing.imageSource || builtinAnn?.imageSource,
+          imageSourceUrl: srcUrl || existing.imageSourceUrl || builtinAnn?.imageSourceUrl,
         };
         countAssigned++;
       }
     }
 
+    let savedToRepo = false;
+    try {
+      const repoAnnotations: Record<string, TraitAnnotation> = { ...nextAnnotations };
+      for (const item of stagedTraitDrawings) {
+        const relPath = fileRelPathByItemId[item.id];
+        for (const code of item.matchedTraitCodes) {
+          if (!code || !repoAnnotations[code]) continue;
+          repoAnnotations[code] = {
+            ...repoAnnotations[code],
+            imageUrl: relPath,
+          };
+        }
+      }
+      const res = await fetch('/api/save-repo-assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: repoFilesToWrite,
+          mediaBundle: {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            traitAnnotations: repoAnnotations,
+            speciesMedia: speciesMediaMap,
+          },
+        }),
+      });
+      if (res.ok) {
+        savedToRepo = true;
+        for (const [code, ann] of Object.entries(repoAnnotations)) {
+          nextAnnotations[code] = ann;
+        }
+      }
+    } catch {
+      // Fallback to localStorage dataUrl if static environment
+    }
+
     onUpdateTraitAnnotationsBatch(nextAnnotations);
     setAppliedBanner(
-      isEn
+      savedToRepo
+        ? isEn
+          ? `Saved ${stagedTraitDrawings.length} compressed files (${countAssigned} traits) with citations directly into the repository (public/assets/traits/ & public/assets/media_bundle.json)!`
+          : `Все ${stagedTraitDrawings.length} сжатых рисунков (привязано ${countAssigned} признаков со ссылками на статьи и DOI) напрямую сохранены в репозиторий (public/assets/traits/ и public/assets/media_bundle.json)!`
+        : isEn
         ? `Attached illustrations to ${countAssigned} trait(s)! Download media_bundle.json below to commit to GitHub.`
         : `Рисунки и ссылки прикреплены к ${countAssigned} признакам! Скачайте media_bundle.json внизу окна для загрузки в GitHub.`
     );
@@ -826,24 +943,33 @@ export const MediaBatchModal: React.FC<MediaBatchModalProps> = ({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <select
-                            value={item.matchedTraitCodes[0] || ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setStagedTraitDrawings((prev) =>
-                                prev.map((p, i) =>
-                                  i === idx ? { ...p, matchedTraitCodes: [val] } : p
-                                )
-                              );
-                            }}
-                            className="max-w-[260px] rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-mono font-bold text-slate-900 focus:border-sky-600 focus:outline-none"
-                          >
-                            {traits.map((t) => (
-                              <option key={t.code} value={t.code}>
-                                {t.code} — {getTraitDisplayDescription(t.code, traitAnnotations, lang)}
-                              </option>
-                            ))}
-                          </select>
+                          {item.matchedTraitCodes.length > 1 ? (
+                            <div
+                              title={item.matchedTraitCodes.join(', ')}
+                              className="max-w-[260px] truncate rounded-lg border border-sky-300 bg-sky-50 px-2.5 py-1 font-mono text-xs font-bold text-sky-900"
+                            >
+                              {item.matchedTraitCodes.join(', ')} ({item.matchedTraitCodes.length})
+                            </div>
+                          ) : (
+                            <select
+                              value={item.matchedTraitCodes[0] || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setStagedTraitDrawings((prev) =>
+                                  prev.map((p, i) =>
+                                    i === idx ? { ...p, matchedTraitCodes: [val] } : p
+                                  )
+                                );
+                              }}
+                              className="max-w-[260px] rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-mono font-bold text-slate-900 focus:border-sky-600 focus:outline-none"
+                            >
+                              {traits.map((t) => (
+                                <option key={t.code} value={t.code}>
+                                  {t.code} — {getTraitDisplayDescription(t.code, traitAnnotations, lang)}
+                                </option>
+                              ))}
+                            </select>
+                          )}
 
                           <input
                             type="text"

@@ -222,21 +222,88 @@ export function matchSpeciesAndSexFromFilename(
 }
 
 /**
+ * Explicit mapping for author's figure filenames that cover multiple traits or use alternative names.
+ */
+const AUTHOR_TRAIT_FILENAME_ALIASES: Record<string, string[]> = {
+  a2coxobasis: ['A2g1', 'A2g2', 'A2g3', 'A2g8', 'A2g9'],
+  metric: [
+    'xa/x',
+    'xas/x',
+    'xas/xa',
+    'n/ns',
+    'no/n',
+    'nai/nao',
+    'nai/n',
+    'cr/cs',
+    'crr/cr',
+    'cri/cro',
+    'cri/cr',
+    'cro/cs',
+    'x/n',
+  ],
+  'p1-p3enp1-2os': ['P1X1os', 'P1X2os', 'P2X1os', 'P2X2os', 'P3X1os', 'P3X2os'],
+  'p1_p3enp1_2os': ['P1X1os', 'P1X2os', 'P2X1os', 'P2X2os', 'P3X1os', 'P3X2os'],
+  'p1-p3exp1-2os': ['P1X1os', 'P1X2os', 'P2X1os', 'P2X2os', 'P3X1os', 'P3X2os'],
+  a2ser: ['A1ser'],
+  'a1 ser': ['A1ser'],
+  a1_ser: ['A1ser'],
+  a1ser: ['A1ser'],
+  p4n2n3: ['P4N2/N3'],
+  p4n2_n3: ['P4N2/N3'],
+  p4x3as2: ['P4X3_as2'],
+  p4x3_as2: ['P4X3_as2'],
+  crdp: ['CRdp'],
+  crser: ['Crser'],
+  cros_os: ['CRoS_os'],
+  cros_is: ['CRoS_is'],
+  cros_osn: ['CRoS_osn'],
+  cros_isn: ['CRoS_isn'],
+  cris_oset: ['CRIS_oset'],
+  cris_iset: ['CRIS_iset'],
+  p4_cs_osp3: ['P4_CS_osp3'],
+  p4_cs_osp2: ['P4_CS_osp2'],
+  'gs_m pore': ['GS_m pore'],
+  gs_m_pore: ['GS_m pore'],
+  proct: ['Proct', 'Proct2'],
+};
+
+/**
  * Automatically matches an image filename to one or more trait codes.
- * E.g. "A2g1.png" -> ["A2g1"], "GS_m_pore.jpg" -> ["GS_m pore"], "cr_cs.png" -> ["cr/cs"],
- * or "A2g1-A2g2-A2g3.png" -> ["A2g1", "A2g2", "A2g3"].
+ * E.g. "A2Coxobasis.png" -> ["A2g1", "A2g2", "A2g3", "A2g8", "A2g9"],
+ * "P1-P3ENp1-2os.png" -> ["P1X1os", "P1X2os", "P2X1os", "P2X2os", "P3X1os", "P3X2os"],
+ * "A2ser.png" -> ["A1ser"], "P4N2N3.png" -> ["P4N2/N3"].
  */
 export function matchTraitsFromFilename(
   filename: string,
   allTraitCodes: string[]
 ): string[] {
   const baseName = filename.replace(/\.[^.]+$/, '').trim();
-  const lowerBase = baseName.toLowerCase();
+  // Also strip trailing 8-char AI Studio hash if present (e.g. "A2N1g_5c0fbba3" -> "A2N1g")
+  const strippedHashBase = baseName.replace(/_[0-9a-f]{8}$/i, '').trim();
+
+  for (const candidate of [strippedHashBase, baseName]) {
+    const lowerCand = candidate.toLowerCase();
+    if (AUTHOR_TRAIT_FILENAME_ALIASES[lowerCand]) {
+      return AUTHOR_TRAIT_FILENAME_ALIASES[lowerCand];
+    }
+    const cleanAlphaNum = lowerCand.replace(/[\s_-]+/g, '');
+    for (const [aliasKey, mappedTraits] of Object.entries(AUTHOR_TRAIT_FILENAME_ALIASES)) {
+      if (aliasKey.replace(/[\s_-]+/g, '') === cleanAlphaNum) {
+        return mappedTraits;
+      }
+    }
+  }
+
+  const lowerBase = strippedHashBase.toLowerCase();
 
   // 1. Check exact match with code or slug
   for (const code of allTraitCodes) {
     const slug = getTraitFileSlug(code).toLowerCase();
-    if (lowerBase === code.toLowerCase() || lowerBase === slug) {
+    if (
+      lowerBase === code.toLowerCase() ||
+      lowerBase === slug ||
+      lowerBase.replace(/[\s_/-]+/g, '') === code.toLowerCase().replace(/[\s_/-]+/g, '')
+    ) {
       return [code];
     }
   }

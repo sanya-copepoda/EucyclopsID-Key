@@ -4,6 +4,7 @@ import { TraitAnnotation, TraitDefinition } from '../types/taxonomy';
 import { formatTraitNumber } from '../utils/matrixEngine';
 import {
   BUILTIN_TRAIT_ANNOTATIONS_EN,
+  BUILTIN_TRAIT_ANNOTATIONS_RU,
   formatQualitativeStateLabel,
   getTraitDisplayComment,
   getTraitDisplayDescription,
@@ -27,7 +28,10 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
   const isEn = lang === 'en';
   const [isZoomed, setIsZoomed] = useState(false);
 
-  const builtin = BUILTIN_TRAIT_ANNOTATIONS_EN[trait.code];
+  const builtinEn = BUILTIN_TRAIT_ANNOTATIONS_EN[trait.code];
+  const builtinRu = BUILTIN_TRAIT_ANNOTATIONS_RU[trait.code];
+  const builtin = isEn ? builtinEn : builtinRu || builtinEn;
+
   const displayDescription = getTraitDisplayDescription(trait.code, annotation, lang);
   const displayComment = getTraitDisplayComment(trait.code, annotation, lang);
   const rawImageUrl = annotation?.imageUrl || builtin?.imageUrl;
@@ -44,16 +48,44 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
     const cleanRel = rawImageUrl.replace(/^\/+/, '');
     return `${import.meta.env.BASE_URL}${cleanRel}`;
   })();
-  const imageSource = (annotation?.imageSource || builtin?.imageSource || '').trim();
-  const imageSourceUrl = (annotation?.imageSourceUrl || builtin?.imageSourceUrl || '').trim();
 
-  const resolvedSourceHref = (() => {
-    if (!imageSourceUrl) return undefined;
-    if (imageSourceUrl.startsWith('http://') || imageSourceUrl.startsWith('https://')) {
-      return imageSourceUrl;
+  const rawSource = (() => {
+    const customSrc = (annotation?.imageSource || '').trim();
+    if (
+      customSrc &&
+      customSrc !== (builtinEn?.imageSource || '').trim() &&
+      customSrc !== (builtinRu?.imageSource || '').trim()
+    ) {
+      return customSrc;
     }
-    if (imageSourceUrl.startsWith('10.')) return `https://doi.org/${imageSourceUrl}`;
-    return `https://${imageSourceUrl}`;
+    return (builtin?.imageSource || customSrc || '').trim();
+  })();
+
+  const rawSourceUrl = (annotation?.imageSourceUrl || builtin?.imageSourceUrl || '').trim();
+
+  const sourceEntries = (() => {
+    if (!rawSource) return [];
+    const parts = rawSource.split(/\s*\|\s*/).filter(Boolean);
+    const urlParts = rawSourceUrl ? rawSourceUrl.split(/\s*\|\s*/) : [];
+    return parts.map((text, idx) => {
+      const rawHref = (urlParts[idx] !== undefined ? urlParts[idx] : urlParts[0] || '').trim();
+      let href: string | undefined;
+      if (rawHref && parts.length === 1) {
+        href = rawHref.startsWith('http://') || rawHref.startsWith('https://')
+          ? rawHref
+          : rawHref.startsWith('10.')
+          ? `https://doi.org/${rawHref}`
+          : `https://${rawHref}`;
+      } else if (rawHref && urlParts[idx]?.trim()) {
+        const u = urlParts[idx].trim();
+        href = u.startsWith('http://') || u.startsWith('https://')
+          ? u
+          : u.startsWith('10.')
+          ? `https://doi.org/${u}`
+          : `https://${u}`;
+      }
+      return { text, href };
+    });
   })();
 
   return (
@@ -180,26 +212,43 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                   </span>
                 </div>
 
-                {imageSource && (
-                  <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-xs text-slate-800">
-                    <div className="flex items-center gap-1.5 min-w-0">
+                {sourceEntries.length > 0 && (
+                  <div className="mt-2.5 space-y-1.5 rounded-lg border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-xs text-slate-800">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
                       <BookOpen className="h-3.5 w-3.5 text-sky-700 shrink-0" />
-                      <span className="font-semibold text-slate-600">
-                        {isEn ? 'Source:' : 'Источник рисунка:'}
+                      <span>
+                        {sourceEntries.length > 1
+                          ? isEn
+                            ? 'Sources:'
+                            : 'Источники рисунка:'
+                          : isEn
+                          ? 'Source:'
+                          : 'Источник рисунка:'}
                       </span>
-                      <span className="italic text-slate-900">{imageSource}</span>
                     </div>
-                    {resolvedSourceHref && (
-                      <a
-                        href={resolvedSourceHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-medium text-sky-700 hover:underline shrink-0"
-                      >
-                        <span>{isEn ? 'Open paper' : 'Открыть статью'}</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
+                    <div className="space-y-1.5 pl-5">
+                      {sourceEntries.map((entry, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-wrap items-baseline justify-between gap-2"
+                        >
+                          <span className="italic text-slate-900 leading-snug">
+                            {entry.text}
+                          </span>
+                          {entry.href && (
+                            <a
+                              href={entry.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 font-medium text-sky-700 hover:underline shrink-0"
+                            >
+                              <span>{isEn ? 'Open paper' : 'Открыть статью'}</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -233,8 +282,10 @@ export const TraitInspectorModal: React.FC<TraitInspectorModalProps> = ({
                 <div className="text-sm font-bold text-slate-900">
                   {trait.code} — {displayDescription}
                 </div>
-                {imageSource && (
-                  <div className="text-xs italic text-slate-500">{imageSource}</div>
+                {sourceEntries.length > 0 && (
+                  <div className="text-xs italic text-slate-500">
+                    {sourceEntries.map((s) => s.text).join(' • ')}
+                  </div>
                 )}
               </div>
               <button
