@@ -5,6 +5,9 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // Relative base './' ensures the compiled bundle works seamlessly on GitHub Pages
+    // under any repository subpath (https://<user>.github.io/<repo>/) as well as root domains.
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

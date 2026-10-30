@@ -86,8 +86,14 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
         {/* Header */}
         <div className="flex items-start justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
           <div>
-            <div className="flex items-baseline gap-3">
+            <div className="flex flex-wrap items-baseline gap-3">
               <h2 className="text-xl font-bold italic text-slate-900">{species.sp}</h2>
+              {evaluation && Object.keys(activeFilters).length > 0 && (
+                <span className="rounded bg-sky-700 px-2 py-0.5 font-mono text-xs font-bold text-white">
+                  {isEn ? 'Similarity:' : 'Сходство:'} {evaluation.quantitativeSimilarity}% · Δ=
+                  {evaluation.rmsSigmaDistance.toFixed(2)}σ
+                </span>
+              )}
               <span className="text-xs text-slate-500">
                 {isEn
                   ? `group ${species.group} · status: ${species.status} · sample n = ${species.specimenCount} spec. · key: ${species.inKey ? '+' : '−'}`
@@ -408,7 +414,8 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                           ) : (
                             <span className="inline-flex items-center gap-1 font-semibold text-rose-700">
                               ✕ {isEn ? 'Mismatch (entered:' : 'Не совпадает (введено:'}{' '}
-                              {evalDetail.userInputSummary})
+                              {evalDetail.userInputSummary}, +{evalDetail.sigmaGapFromTolerance.toFixed(2)}σ,{' '}
+                              {evalDetail.traitSimilarity}%)
                             </span>
                           )}
                         </td>

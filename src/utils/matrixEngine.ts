@@ -744,8 +744,17 @@ export function formatTraitNumber(val: number | null | undefined, decimals: numb
   return decimals === 0 ? String(Math.round(val)) : val.toFixed(decimals);
 }
 
+const ORDINAL_QUALITATIVE_CODES = new Set<string>([
+  'P4IS_dr',
+  'Proct2',
+  'AnS_dsp',
+  'CRoS_is',
+  'GS_m pore',
+]);
+
 /**
- * Evaluates all species in the dataset against the user's currently entered trait filters.
+ * Evaluates all species in the dataset against the user's currently entered trait filters,
+ * computing both strict/extrapolated candidate status and a continuous quantitative similarity index.
  */
 export function evaluateSpeciesCandidates(
   speciesList: SpeciesProfile[],
@@ -778,7 +787,10 @@ export function evaluateSpeciesCandidates(
     let extrapolatedMatchesCount = 0;
     let missingDataCount = 0;
     let mismatchesCount = 0;
+    let marginalMismatchesCount = 0;
     let totalDistance = 0;
+    let sumSquaredSigmaDist = 0;
+    let sumTraitSimilarity = 0;
     let comparableTraitsCount = 0;
 
     const details: Record<string, TraitEvaluationDetail> = {};
@@ -791,7 +803,7 @@ export function evaluateSpeciesCandidates(
 
       if (trait.kind === 'qualitative') {
         const userStates = filter.selectedStates || [];
-        const userInputSummary = userStates.join(' или ');
+        const userInputSummary = userStates.join(' | ');
 
         if (stats.n === 0 || stats.stateSet.length === 0) {
           const status = config.retainOnMissingData ? 'missing_data' : 'mismatch';
@@ -802,13 +814,18 @@ export function evaluateSpeciesCandidates(
             traitCode: trait.code,
             status,
             userInputSummary,
-            speciesRawSummary: '? (нет данных)',
-            speciesExtrapolatedSummary: '? (нет данных)',
+            speciesRawSummary: '?',
+            speciesExtrapolatedSummary: '?',
             rawMin: null,
             rawMax: null,
             extMin: null,
             extMax: null,
             normalizedDistance: 0.5,
+            traitSimilarity: 65,
+            sigmaDeviation: 0.5,
+            sigmaGapFromTolerance: status === 'mismatch' ? 1.2 : 0,
+            rawGapFromTolerance: status === 'mismatch' ? 1 : 0,
+            mismatchSeverity: status === 'mismatch' ? 'moderate' : 'none',
           };
           details[trait.code] = detail;
           if (status === 'mismatch') mismatchReasons.push(detail);
@@ -838,8 +855,13 @@ export function evaluateSpeciesCandidates(
           comparableTraitsCount++;
           const bestCount = Math.max(...userStates.map((u) => stats.stateCounts[u] || 0));
           const freqRatio = bestCount / stats.n;
-          const dist = (1 - freqRatio) * 0.25;
-          totalDistance += dist;
+          const sigmaDev = Number(((1 - freqRatio) * 0.55).toFixed(2));
+          const trSim = Math.round(80 + 20 * freqRatio);
+          const effDist = 0.25 * sigmaDev;
+
+          totalDistance += effDist;
+          sumSquaredSigmaDist += effDist * effDist;
+          sumTraitSimilarity += trSim;
 
           details[trait.code] = {
             traitCode: trait.code,
@@ -851,29 +873,81 @@ export function evaluateSpeciesCandidates(
             rawMax: stats.rawMax,
             extMin: stats.rawMin,
             extMax: stats.rawMax,
-            normalizedDistance: dist,
+            normalizedDistance: effDist,
+            traitSimilarity: trSim,
+            sigmaDeviation: sigmaDev,
+            sigmaGapFromTolerance: 0,
+            rawGapFromTolerance: 0,
+            mismatchSeverity: 'none',
           };
         } else if (hasRelaxedState) {
           extrapolatedMatchesCount++;
           comparableTraitsCount++;
-          totalDistance += 0.65;
+          const sigmaDev = 0.75;
+          const trSim = 66;
+          const effDist = 0.55;
+
+          totalDistance += effDist;
+          sumSquaredSigmaDist += effDist * effDist;
+          sumTraitSimilarity += trSim;
 
           details[trait.code] = {
             traitCode: trait.code,
             status: 'extrapolated_match',
             userInputSummary,
             speciesRawSummary: spStatesSummary,
-            speciesExtrapolatedSummary: `${spStatesSummary} (±1 при n=${stats.n})`,
+            speciesExtrapolatedSummary: `${spStatesSummary} (±1, n=${stats.n})`,
             rawMin: stats.rawMin,
             rawMax: stats.rawMax,
             extMin: (stats.rawMin ?? 0) - 1,
             extMax: (stats.rawMax ?? 0) + 1,
-            normalizedDistance: 0.65,
+            normalizedDistance: effDist,
+            traitSimilarity: trSim,
+            sigmaDeviation: sigmaDev,
+            sigmaGapFromTolerance: 0,
+            rawGapFromTolerance: 0,
+            mismatchSeverity: 'none',
           };
         } else {
           mismatchesCount++;
           comparableTraitsCount++;
-          totalDistance += 2.0;
+
+          const minStateDiff = Math.min(
+            ...userStates.flatMap((u) => stats.stateSet.map((s) => Math.abs(u - s)))
+          );
+          const isOrdinal = ORDINAL_QUALITATIVE_CODES.has(trait.code);
+
+          let sigmaGap = 1.6;
+          let trSim = 18;
+          let severity: 'marginal' | 'moderate' | 'severe' = 'moderate';
+
+          if (minStateDiff === 1 && (isOrdinal || stats.n <= 2)) {
+            sigmaGap = stats.n <= 2 ? 0.65 : 0.85;
+            trSim = stats.n <= 2 ? 48 : 38;
+            severity = stats.n <= 2 ? 'marginal' : 'moderate';
+          } else if (minStateDiff >= 2) {
+            sigmaGap = 2.2;
+            trSim = 6;
+            severity = 'severe';
+          } else if (stats.n >= 6) {
+            // Binary trait where species has large sample size and never showed this state
+            sigmaGap = 1.75;
+            trSim = 14;
+            severity = 'moderate';
+          } else {
+            sigmaGap = 1.25;
+            trSim = 26;
+            severity = 'moderate';
+          }
+
+          if (severity === 'marginal') {
+            marginalMismatchesCount++;
+          }
+
+          const effDist = 0.8 + sigmaGap;
+          totalDistance += effDist;
+          sumSquaredSigmaDist += effDist * effDist;
+          sumTraitSimilarity += trSim;
 
           const detail: TraitEvaluationDetail = {
             traitCode: trait.code,
@@ -885,7 +959,12 @@ export function evaluateSpeciesCandidates(
             rawMax: stats.rawMax,
             extMin: stats.rawMin,
             extMax: stats.rawMax,
-            normalizedDistance: 2.0,
+            normalizedDistance: effDist,
+            traitSimilarity: trSim,
+            sigmaDeviation: sigmaGap,
+            sigmaGapFromTolerance: Number(sigmaGap.toFixed(2)),
+            rawGapFromTolerance: minStateDiff,
+            mismatchSeverity: severity,
           };
           details[trait.code] = detail;
           mismatchReasons.push(detail);
@@ -912,9 +991,9 @@ export function evaluateSpeciesCandidates(
             filter.selectedStates
               .map((s) =>
                 trait.code === 'A1ser' && s === 0
-                  ? '0 (гладкая)'
+                  ? '0 (smooth)'
                   : trait.code === 'A1ser' && s === 100
-                  ? '100 (много)'
+                  ? '100 (many)'
                   : String(s)
               )
               .join(' | ')
@@ -927,7 +1006,7 @@ export function evaluateSpeciesCandidates(
               : `${formatTraitNumber(uMin, trait.decimals)}–${formatTraitNumber(uMax, trait.decimals)}`
           );
         }
-        const userInputSummary = summaryParts.join(' или ');
+        const userInputSummary = summaryParts.join(' | ');
 
         if (stats.n === 0 || stats.rawMin === null || stats.rawMax === null) {
           const status = config.retainOnMissingData ? 'missing_data' : 'mismatch';
@@ -938,13 +1017,18 @@ export function evaluateSpeciesCandidates(
             traitCode: trait.code,
             status,
             userInputSummary,
-            speciesRawSummary: '? (нет данных)',
-            speciesExtrapolatedSummary: '? (нет данных)',
+            speciesRawSummary: '?',
+            speciesExtrapolatedSummary: '?',
             rawMin: null,
             rawMax: null,
             extMin: null,
             extMax: null,
             normalizedDistance: 0.5,
+            traitSimilarity: 65,
+            sigmaDeviation: 0.5,
+            sigmaGapFromTolerance: status === 'mismatch' ? 1.2 : 0,
+            rawGapFromTolerance: status === 'mismatch' ? 1 : 0,
+            mismatchSeverity: status === 'mismatch' ? 'moderate' : 'none',
           };
           details[trait.code] = detail;
           if (status === 'mismatch') mismatchReasons.push(detail);
@@ -959,18 +1043,18 @@ export function evaluateSpeciesCandidates(
 
         const speciesRawSummary =
           trait.code === 'A1ser' && rMin === 100 && rMax === 100
-            ? `100 (много, n=${stats.n})`
+            ? `100 (many, n=${stats.n})`
             : trait.code === 'A1ser' && rMin === 0 && rMax === 0
-            ? `0 (гладкая, n=${stats.n})`
+            ? `0 (smooth, n=${stats.n})`
             : rMin === rMax
             ? `${formatTraitNumber(rMin, trait.decimals)} (n=${stats.n})`
             : `${formatTraitNumber(rMin, trait.decimals)}–${formatTraitNumber(rMax, trait.decimals)}`;
 
         const speciesExtrapolatedSummary =
           trait.code === 'A1ser' && eMin === 100 && eMax === 100
-            ? '100 (много)'
+            ? '100 (many)'
             : trait.code === 'A1ser' && eMin === 0 && eMax === 0
-            ? '0 (гладкая)'
+            ? '0 (smooth)'
             : eMin === eMax
             ? formatTraitNumber(eMin, trait.decimals)
             : `${formatTraitNumber(eMin, trait.decimals)}–${formatTraitNumber(eMax, trait.decimals)}`;
@@ -986,17 +1070,59 @@ export function evaluateSpeciesCandidates(
           matchesSelectedStates ||
           (hasNumeric && uMax >= eMin - eps && uMin <= eMax + eps);
 
-        const uMid = hasNumeric
-          ? (uMin + uMax) / 2
-          : filter.selectedStates?.[0] ?? (stats.mean ?? rMin);
-        const scale = Math.max(stats.estimatedSd || trait.pooledSd || 1, 0.01);
-        const zScoreFromMean = Math.abs(uMid - (stats.mean ?? rMin)) / scale;
+        // Compute biologically meaningful standardized scale (sigma)
+        // For A1ser, code 100 means "very fine denticles (>30)", so map 100 -> 32 when computing continuous distance
+        const mapA1ser = (val: number) => (trait.code === 'A1ser' && val >= 95 ? 32 : val);
+
+        const effUMin = hasNumeric
+          ? mapA1ser(uMin)
+          : mapA1ser(filter.selectedStates?.[0] ?? (stats.mean ?? rMin));
+        const effUMax = hasNumeric
+          ? mapA1ser(uMax)
+          : mapA1ser(filter.selectedStates?.[filter.selectedStates.length - 1] ?? effUMin);
+
+        const effRMin = mapA1ser(rMin);
+        const effRMax = mapA1ser(rMax);
+        const effEMin = mapA1ser(eMin);
+        const effEMax = mapA1ser(eMax);
+        const effMean =
+          trait.code === 'A1ser'
+            ? stats.values.reduce((acc, v) => acc + mapA1ser(v), 0) / stats.n
+            : stats.mean ?? (rMin + rMax) / 2;
+
+        const minFloorSd =
+          trait.code === 'A1ser'
+            ? 4.0
+            : Math.max(
+                0.4 * (trait.groupPooledSd[sp.group] ?? trait.pooledSd),
+                trait.decimals > 0 ? 0.05 : 0.65
+              );
+
+        const rawEstSd =
+          trait.code === 'A1ser' && (rMax >= 95 || effUMax >= 30)
+            ? 5.0
+            : stats.estimatedSd || trait.pooledSd || 1;
+        const scale = Math.max(rawEstSd, minFloorSd);
+
+        // Distance from user's interval [effUMin, effUMax] to species centroid effMean
+        const distFromMean =
+          effMean >= effUMin && effMean <= effUMax
+            ? 0
+            : Math.min(Math.abs(effUMin - effMean), Math.abs(effUMax - effMean));
+        const zScoreFromMean = Number((distFromMean / scale).toFixed(2));
 
         if (overlapsRaw) {
           exactMatchesCount++;
           comparableTraitsCount++;
-          const normDist = Math.min(0.45, zScoreFromMean * 0.15);
-          totalDistance += normDist;
+          const trSim = Math.max(
+            68,
+            Math.min(100, Math.round(100 * Math.exp(-0.14 * Math.min(zScoreFromMean, 2.5) ** 2)))
+          );
+          const effDist = Math.min(0.45, zScoreFromMean * 0.22);
+
+          totalDistance += effDist;
+          sumSquaredSigmaDist += effDist * effDist;
+          sumTraitSimilarity += trSim;
 
           details[trait.code] = {
             traitCode: trait.code,
@@ -1008,14 +1134,32 @@ export function evaluateSpeciesCandidates(
             rawMax: rMax,
             extMin: eMin,
             extMax: eMax,
-            normalizedDistance: normDist,
+            normalizedDistance: effDist,
+            traitSimilarity: trSim,
+            sigmaDeviation: zScoreFromMean,
+            sigmaGapFromTolerance: 0,
+            rawGapFromTolerance: 0,
+            mismatchSeverity: 'none',
           };
         } else if (overlapsExt) {
           extrapolatedMatchesCount++;
           comparableTraitsCount++;
-          const distFromRaw = uMid < rMin ? (rMin - uMid) / scale : (uMid - rMax) / scale;
-          const normDist = Math.min(0.95, 0.5 + distFromRaw * 0.2);
-          totalDistance += normDist;
+          const rawGapFromRaw =
+            effUMax < effRMin
+              ? effRMin - effUMax
+              : effUMin > effRMax
+              ? effUMin - effRMax
+              : 0;
+          const sigmaGapFromRaw = rawGapFromRaw / scale;
+          const trSim = Math.max(
+            48,
+            Math.min(76, Math.round(74 * Math.exp(-0.30 * sigmaGapFromRaw ** 2)))
+          );
+          const effDist = 0.45 + Math.min(0.65, sigmaGapFromRaw * 0.35);
+
+          totalDistance += effDist;
+          sumSquaredSigmaDist += effDist * effDist;
+          sumTraitSimilarity += trSim;
 
           details[trait.code] = {
             traitCode: trait.code,
@@ -1027,14 +1171,49 @@ export function evaluateSpeciesCandidates(
             rawMax: rMax,
             extMin: eMin,
             extMax: eMax,
-            normalizedDistance: normDist,
+            normalizedDistance: effDist,
+            traitSimilarity: trSim,
+            sigmaDeviation: zScoreFromMean,
+            sigmaGapFromTolerance: 0,
+            rawGapFromTolerance: 0,
+            mismatchSeverity: 'none',
           };
         } else {
           mismatchesCount++;
           comparableTraitsCount++;
-          const distFromExt = uMid < eMin ? (eMin - uMid) / scale : (uMid - eMax) / scale;
-          const normDist = 1.2 + Math.min(3.0, distFromExt);
-          totalDistance += normDist;
+
+          const rawGap =
+            effUMax < effEMin
+              ? effEMin - effUMax
+              : effUMin > effEMax
+              ? effUMin - effEMax
+              : Math.min(Math.abs(effUMin - effMean), Math.abs(effUMax - effMean));
+
+          const displayRawGap =
+            uMax < eMin
+              ? Number((eMin - uMax).toFixed(trait.decimals))
+              : uMin > eMax
+              ? Number((uMin - eMax).toFixed(trait.decimals))
+              : Number(rawGap.toFixed(trait.decimals));
+
+          const sigmaGap = Number((rawGap / scale).toFixed(2));
+          const severity: 'marginal' | 'moderate' | 'severe' =
+            sigmaGap <= 0.75 ? 'marginal' : sigmaGap <= 1.85 ? 'moderate' : 'severe';
+
+          if (severity === 'marginal') {
+            marginalMismatchesCount++;
+          }
+
+          // Smooth Gaussian/Cauchy decay so marginal boundary misses retain high partial credit
+          const trSim = Math.max(
+            0,
+            Math.min(58, Math.round(58 * Math.exp(-0.52 * sigmaGap * sigmaGap)))
+          );
+
+          const effDist = 0.8 + Math.min(4.0, sigmaGap * 1.1);
+          totalDistance += effDist;
+          sumSquaredSigmaDist += effDist * effDist;
+          sumTraitSimilarity += trSim;
 
           const detail: TraitEvaluationDetail = {
             traitCode: trait.code,
@@ -1046,10 +1225,57 @@ export function evaluateSpeciesCandidates(
             rawMax: rMax,
             extMin: eMin,
             extMax: eMax,
-            normalizedDistance: normDist,
+            normalizedDistance: effDist,
+            traitSimilarity: trSim,
+            sigmaDeviation: zScoreFromMean,
+            sigmaGapFromTolerance: sigmaGap,
+            rawGapFromTolerance: displayRawGap,
+            mismatchSeverity: severity,
           };
           details[trait.code] = detail;
           mismatchReasons.push(detail);
+        }
+      }
+    }
+
+    // Sort mismatchReasons so the user can see both marginal and severe mismatches clearly (marginal first or severe first)
+    mismatchReasons.sort((a, b) => a.sigmaGapFromTolerance - b.sigmaGapFromTolerance);
+
+    // Find nearest individual specimen of this species to the user's entered filters
+    let nearestSpecimenNum: number | null = sp.specimens[0]?.num ?? null;
+    if (filterEntries.length > 0 && sp.specimens.length > 0) {
+      let bestSpecDist = Infinity;
+      for (const spec of sp.specimens) {
+        let specSqDist = 0;
+        let specComp = 0;
+        for (const filter of filterEntries) {
+          const trait = traitMap[filter.traitCode];
+          const val = spec.traits[filter.traitCode];
+          if (!trait || val === null || val === undefined) continue;
+          specComp++;
+          if (trait.kind === 'qualitative') {
+            const matched = filter.selectedStates?.includes(val);
+            specSqDist += matched ? 0 : 1.5;
+          } else {
+            const mapA1 = (v: number) => (trait.code === 'A1ser' && v >= 95 ? 32 : v);
+            const hasNumVal = filter.numericValue !== null && filter.numericValue !== undefined;
+            const uMin = hasNumVal
+              ? (filter.numericValue as number)
+              : filter.numericMin ?? filter.numericMax ?? val;
+            const uMax = hasNumVal
+              ? (filter.numericValue as number)
+              : filter.numericMax ?? filter.numericMin ?? val;
+            const uMid = mapA1((uMin + uMax) / 2);
+            const sVal = mapA1(val);
+            const sc = Math.max(trait.pooledSd || 1, trait.decimals > 0 ? 0.05 : 0.65);
+            const d = (sVal - uMid) / sc;
+            specSqDist += d * d;
+          }
+        }
+        const avgDist = specComp > 0 ? Math.sqrt(specSqDist / specComp) : 999;
+        if (avgDist < bestSpecDist) {
+          bestSpecDist = avgDist;
+          nearestSpecimenNum = spec.num;
         }
       }
     }
@@ -1058,18 +1284,26 @@ export function evaluateSpeciesCandidates(
     const isCandidate = mismatchesCount === 0;
     const isStrictRawCandidate = mismatchesCount === 0 && extrapolatedMatchesCount === 0;
     const centroidDistance =
-      comparableTraitsCount > 0 ? totalDistance / comparableTraitsCount : 0;
+      comparableTraitsCount > 0 ? Number((totalDistance / comparableTraitsCount).toFixed(2)) : 0;
+    const rmsSigmaDistance =
+      comparableTraitsCount > 0
+        ? Number(Math.sqrt(sumSquaredSigmaDist / comparableTraitsCount).toFixed(2))
+        : 0;
 
+    let quantitativeSimilarity = 100;
     let compatibilityScore = 100;
-    if (totalActive > 0) {
-      const matchWeighted =
-        exactMatchesCount * 1.0 +
-        extrapolatedMatchesCount * 0.82 +
-        missingDataCount * 0.7;
-      compatibilityScore = Math.max(
-        0,
-        Math.min(100, Math.round((matchWeighted / totalActive) * 100 - mismatchesCount * 22))
+
+    if (comparableTraitsCount > 0) {
+      const meanKernelSim = sumTraitSimilarity / comparableTraitsCount;
+      const rmsGaussianSim = 100 * Math.exp(-0.32 * rmsSigmaDistance * rmsSigmaDistance);
+      quantitativeSimilarity = Math.max(
+        1,
+        Math.min(100, Math.round(0.62 * meanKernelSim + 0.38 * rmsGaussianSim))
       );
+      compatibilityScore = quantitativeSimilarity;
+    } else if (totalActive > 0) {
+      quantitativeSimilarity = 50;
+      compatibilityScore = 50;
     }
 
     evaluations.push({
@@ -1080,8 +1314,12 @@ export function evaluateSpeciesCandidates(
       extrapolatedMatchesCount,
       missingDataCount,
       mismatchesCount,
+      marginalMismatchesCount,
       compatibilityScore,
+      quantitativeSimilarity,
+      rmsSigmaDistance,
       centroidDistance,
+      nearestSpecimenNum,
       details,
       mismatchReasons,
     });
@@ -1091,17 +1329,23 @@ export function evaluateSpeciesCandidates(
     if (a.isCandidate !== b.isCandidate) {
       return a.isCandidate ? -1 : 1;
     }
+    // Both for candidates and eliminated species, sort primarily by quantitativeSimilarity descending,
+    // then by rmsSigmaDistance ascending
+    if (b.quantitativeSimilarity !== a.quantitativeSimilarity) {
+      return b.quantitativeSimilarity - a.quantitativeSimilarity;
+    }
+    if (Math.abs(a.rmsSigmaDistance - b.rmsSigmaDistance) > 0.02) {
+      return a.rmsSigmaDistance - b.rmsSigmaDistance;
+    }
     if (a.mismatchesCount !== b.mismatchesCount) {
       return a.mismatchesCount - b.mismatchesCount;
-    }
-    if (Math.abs(a.centroidDistance - b.centroidDistance) > 0.05) {
-      return a.centroidDistance - b.centroidDistance;
     }
     return a.species.sp.localeCompare(b.species.sp);
   });
 
   return evaluations;
 }
+
 
 /**
  * Computes Lucid-style Separating Power (0..100) for each trait among the currently remaining candidate species.

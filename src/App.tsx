@@ -1,4 +1,3 @@
-// Source: Google Maps Platform Code Assist
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Globe, Mail } from 'lucide-react';
 import { DEFAULT_EUCYCLOPS_CSV } from './data/rawCsvData';
@@ -67,20 +66,14 @@ export default function App() {
 
   const [inspectedTrait, setInspectedTrait] = useState<TraitDefinition | null>(null);
   const [isAddSpecimenModalOpen, setIsAddSpecimenModalOpen] = useState<boolean>(false);
-  const [gmpQuotaExceeded, setGmpQuotaExceeded] = useState<boolean>(false);
-
-  useEffect(() => {
-    const handleQuotaExceeded = () => setGmpQuotaExceeded(true);
-    window.addEventListener('gmp-quota-exceeded', handleQuotaExceeded);
-    return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
-  }, []);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const annotationsImportRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync with /assets/aistudio/Eucyclops___________4f462c5a if available
+  // Sync with public/assets/aistudio/Eucyclops___________4f462c5a if available
   useEffect(() => {
-    fetch('/assets/aistudio/Eucyclops___________4f462c5a')
+    const csvUrl = `${import.meta.env.BASE_URL}assets/aistudio/Eucyclops___________4f462c5a`;
+    fetch(csvUrl)
       .then((res) => {
         if (res.ok) return res.text();
         throw new Error('Fallback to embedded CSV');
@@ -111,10 +104,11 @@ export default function App() {
     [dataset.speciesList, dataset.traitMap, activeFilters, config]
   );
 
-  const remainingCandidates = useMemo(
-    () => evaluations.filter((e) => e.isCandidate).map((e) => e.species),
-    [evaluations]
-  );
+  const remainingCandidates = useMemo(() => {
+    const strictCands = evaluations.filter((e) => e.isCandidate).map((e) => e.species);
+    if (strictCands.length > 0) return strictCands;
+    return evaluations.slice(0, 6).map((e) => e.species);
+  }, [evaluations]);
 
   const handleAddSpecimens = (newSpecs: SpecimenRecord[]) => {
     setExtraSpecimens((prev) => {
@@ -279,22 +273,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      {gmpQuotaExceeded && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
-          <span>
-            Google Maps Platform quota reached. If you are the app owner, visit{' '}
-            <a
-              href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold text-amber-950 hover:text-amber-800"
-            >
-              maps developer site
-            </a>{' '}
-            for instructions to update your account.
-          </span>
-        </div>
-      )}
       {/* Top Bar Contract: 1 row, 3 zones separated by gap-8 */}
       <header className="sticky top-0 z-30 flex items-center justify-between gap-6 border-b border-slate-200 bg-white px-6 py-3.5">
         {/* Zone 1: Single text element wordmark */}

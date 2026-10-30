@@ -170,6 +170,8 @@ export type TraitMatchStatus =
   | 'missing_data'      // Species has no data ('?') for this trait
   | 'mismatch';         // Outside allowed range / state not present
 
+export type MismatchSeverity = 'none' | 'marginal' | 'moderate' | 'severe';
+
 export interface TraitEvaluationDetail {
   traitCode: string;
   status: TraitMatchStatus;
@@ -182,6 +184,16 @@ export interface TraitEvaluationDetail {
   extMax: number | null;
   /** Normalized distance from raw range (0 if inside raw range, <=1 if inside extrapolated range, >1 if outside) */
   normalizedDistance: number;
+  /** Continuous trait similarity score (0 to 100%) based on Gaussian/Cauchy kernel of standardized distance */
+  traitSimilarity: number;
+  /** Standardized distance from species mean/centroid in units of intraspecific SD (sigma) */
+  sigmaDeviation: number;
+  /** Standardized gap outside the extrapolated tolerance interval in units of SD (0 if inside tolerance) */
+  sigmaGapFromTolerance: number;
+  /** Raw numeric gap outside the extrapolated tolerance interval in original trait units (0 if inside) */
+  rawGapFromTolerance: number;
+  /** Classification of mismatch magnitude */
+  mismatchSeverity: MismatchSeverity;
 }
 
 export interface SpeciesCandidateEvaluation {
@@ -198,12 +210,21 @@ export interface SpeciesCandidateEvaluation {
   missingDataCount: number;
   /** Number of active traits where species was eliminated (mismatch) */
   mismatchesCount: number;
+  /** Number of mismatches that are only marginal boundary misses (<= 0.75 sigma) */
+  marginalMismatchesCount: number;
   /** Overall similarity / compatibility score (0 to 100) */
   compatibilityScore: number;
+  /** Continuous quantitative morphological similarity index (0 to 100%) combining kernel proximity and RMS sigma distance */
+  quantitativeSimilarity: number;
+  /** Root-mean-square standardized deviation across all active comparable traits (in sigma units) */
+  rmsSigmaDistance: number;
   /** Mean Z-score / distance across active traits (lower = closer to species centroid) */
   centroidDistance: number;
+  /** Nearest individual specimen of this species in the database to the entered traits */
+  nearestSpecimenNum: number | null;
   /** Per-trait evaluation breakdown for all active traits */
   details: Record<string, TraitEvaluationDetail>;
-  /** List of mismatching trait evaluations (reasons for elimination) */
+  /** List of mismatching trait evaluations (reasons for elimination), sorted from most severe to least severe */
   mismatchReasons: TraitEvaluationDetail[];
 }
+

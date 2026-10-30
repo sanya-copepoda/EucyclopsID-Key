@@ -1,15 +1,6 @@
-// Source: Google Maps Platform Code Assist
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  APIProvider,
-  Map,
-  AdvancedMarker,
-  Pin,
-  InfoWindow,
-  useMap,
-} from '@vis.gl/react-google-maps';
 import L from 'leaflet';
-import { MapPin, Navigation, Sparkles } from 'lucide-react';
+import { MapPin, Navigation } from 'lucide-react';
 import { SpeciesProfile, SpecimenRecord } from '../types/taxonomy';
 import { formatTraitNumber } from '../utils/matrixEngine';
 import { translateRegion, useLanguage } from '../utils/i18n';
@@ -21,47 +12,6 @@ interface SpeciesDistributionMapProps {
   onSelectSpecimen?: (specimen: SpecimenRecord | null) => void;
   onLoadSpecimenIntoKey?: (specimen: SpecimenRecord, mode: 'all' | 'diagnostic8') => void;
 }
-
-interface MapBoundsUpdaterProps {
-  points: { lat: number; lng: number }[];
-  focusedPoint: { lat: number; lng: number } | null;
-  fitTrigger: number;
-}
-
-const MapBoundsUpdater: React.FC<MapBoundsUpdaterProps> = ({
-  points,
-  focusedPoint,
-  fitTrigger,
-}) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || points.length === 0) return;
-
-    if (points.length === 1) {
-      map.setCenter(points[0]);
-      map.setZoom(7);
-      return;
-    }
-
-    const bounds = new google.maps.LatLngBounds();
-    for (const pt of points) {
-      bounds.extend(pt);
-    }
-    map.fitBounds(bounds, 48);
-  }, [map, points, fitTrigger]);
-
-  useEffect(() => {
-    if (!map || !focusedPoint) return;
-    map.panTo(focusedPoint);
-    const currentZoom = map.getZoom() ?? 5;
-    if (currentZoom < 7) {
-      map.setZoom(7);
-    }
-  }, [map, focusedPoint]);
-
-  return null;
-};
 
 const TILE_URLS: Record<
   'terrain' | 'hybrid' | 'roadmap',
@@ -91,16 +41,12 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
   const { lang } = useLanguage();
   const isEn = lang === 'en';
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-  const [providerMode, setProviderMode] = useState<'osm' | 'google'>(() =>
-    apiKey ? 'google' : 'osm'
-  );
   const [mapScope, setMapScope] = useState<'species' | 'group' | 'all'>('species');
   const [mapTypeId, setMapTypeId] = useState<'terrain' | 'hybrid' | 'roadmap'>('roadmap');
   const [activeSpecimen, setActiveSpecimen] = useState<SpecimenRecord | null>(null);
   const [fitTrigger, setFitTrigger] = useState<number>(0);
 
-  // Refs for multi-marker Leaflet map (used on Render.com or when OSM mode is selected)
+  // Refs for multi-marker Leaflet map (OpenStreetMap)
   const leafletContainerRef = useRef<HTMLDivElement | null>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const leafletTileRef = useRef<L.TileLayer | null>(null);
@@ -209,11 +155,9 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
     return null;
   }, [activeSpecimen, displaySpecimensWithOffsets]);
 
-  const useOsmMode = !apiKey || providerMode === 'osm';
-
-  // Initialize & update multi-marker Leaflet map when in OSM mode
+  // Initialize & update multi-marker Leaflet map
   useEffect(() => {
-    if (!useOsmMode || !leafletContainerRef.current) return;
+    if (!leafletContainerRef.current) return;
     if (primaryGeocodedSpecimens.length === 0 && backgroundSpecimens.length === 0) return;
 
     if (!leafletMapRef.current) {
@@ -239,11 +183,11 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
         leafletMarkersRef.current = null;
       }
     };
-  }, [useOsmMode, species.sp]);
+  }, [species.sp, primaryGeocodedSpecimens.length, backgroundSpecimens.length]);
 
   // Update tile layer when mapTypeId changes in Leaflet
   useEffect(() => {
-    if (!useOsmMode || !leafletMapRef.current) return;
+    if (!leafletMapRef.current) return;
     if (leafletTileRef.current) {
       leafletTileRef.current.remove();
     }
@@ -252,11 +196,11 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
       attribution: tileCfg.attribution,
       maxZoom: 18,
     }).addTo(leafletMapRef.current);
-  }, [useOsmMode, mapTypeId]);
+  }, [mapTypeId]);
 
   // Render ALL markers simultaneously in Leaflet
   useEffect(() => {
-    if (!useOsmMode || !leafletMapRef.current || !leafletMarkersRef.current) return;
+    if (!leafletMapRef.current || !leafletMarkersRef.current) return;
     const group = leafletMarkersRef.current;
     group.clearLayers();
 
@@ -344,7 +288,6 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
       marker.addTo(group);
     }
   }, [
-    useOsmMode,
     displaySpecimensWithOffsets,
     backgroundSpecimens,
     activeSpecimen,
@@ -354,7 +297,7 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
 
   // Fit bounds to all points when species/scope/fitTrigger changes in Leaflet
   useEffect(() => {
-    if (!useOsmMode || !leafletMapRef.current || pointsForBounds.length === 0) return;
+    if (!leafletMapRef.current || pointsForBounds.length === 0) return;
     const map = leafletMapRef.current;
     if (pointsForBounds.length === 1) {
       map.setView([pointsForBounds[0].lat, pointsForBounds[0].lng], 7);
@@ -363,14 +306,14 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
     const latLngs = pointsForBounds.map((p) => [p.lat, p.lng] as [number, number]);
     const bounds = L.latLngBounds(latLngs);
     map.fitBounds(bounds, { padding: [38, 38], maxZoom: 10 });
-  }, [useOsmMode, pointsForBounds, fitTrigger]);
+  }, [pointsForBounds, fitTrigger]);
 
   // Pan to focused specimen in Leaflet when clicked
   useEffect(() => {
-    if (!useOsmMode || !leafletMapRef.current || !focusedPoint) return;
+    if (!leafletMapRef.current || !focusedPoint) return;
     const map = leafletMapRef.current;
     map.panTo([focusedPoint.lat, focusedPoint.lng], { animate: true });
-  }, [useOsmMode, focusedPoint]);
+  }, [focusedPoint]);
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
@@ -381,11 +324,11 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
             <MapPin className="h-4 w-4 text-sky-700" />
             {isEn ? (
               <>
-                Sampling Localities Map for <em className="italic">{species.sp}</em>
+                Sampling Localities Map for <em className="italic">{species.sp}</em> (OpenStreetMap)
               </>
             ) : (
               <>
-                Карта мест сбора <em className="italic">{species.sp}</em>
+                Карта мест сбора <em className="italic">{species.sp}</em> (OpenStreetMap)
               </>
             )}
           </span>
@@ -475,33 +418,6 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
             </button>
           </div>
 
-          {apiKey && (
-            <div className="flex items-center gap-1 rounded-lg bg-slate-200/75 p-0.5 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setProviderMode('osm')}
-                className={`rounded-md px-2 py-1 font-medium transition-colors cursor-pointer ${
-                  providerMode === 'osm'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                OSM
-              </button>
-              <button
-                type="button"
-                onClick={() => setProviderMode('google')}
-                className={`rounded-md px-2 py-1 font-medium transition-colors cursor-pointer ${
-                  providerMode === 'google'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Google
-              </button>
-            </div>
-          )}
-
           <button
             type="button"
             onClick={() => {
@@ -564,7 +480,7 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
             </>
           )}
         </div>
-      ) : useOsmMode ? (
+      ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
           {/* Left 8 cols: Multi-marker Leaflet Map showing ALL specimens at once */}
           <div className="lg:col-span-8 h-[380px] w-full bg-slate-100 relative z-0">
@@ -674,161 +590,6 @@ export const SpeciesDistributionMap: React.FC<SpeciesDistributionMapProps> = ({
                 : 'Примечание: особи из одной и той же точки сбора слегка разнесены по кругу, чтобы каждый маркер был виден отдельно.'}
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="relative h-[380px] w-full">
-          <APIProvider apiKey={apiKey} language={isEn ? 'en' : 'ru'} region={isEn ? 'US' : 'RU'}>
-            <Map
-              mapId="DEMO_MAP_ID"
-              defaultCenter={defaultCenter}
-              defaultZoom={4}
-              mapTypeId={mapTypeId}
-              gestureHandling="greedy"
-              internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-              className="h-full w-full"
-            >
-              <MapBoundsUpdater
-                points={pointsForBounds}
-                focusedPoint={focusedPoint}
-                fitTrigger={fitTrigger}
-              />
-
-              {/* Background comparison markers */}
-              {backgroundSpecimens.map((spec) => (
-                <AdvancedMarker
-                  key={`bg-${spec.num}`}
-                  position={{ lat: spec.lat, lng: spec.lon }}
-                  title={`#${spec.num} ${spec.sp} — ${translateRegion(spec.region, lang)}, ${spec.waterbody}`}
-                  onClick={() => {
-                    setActiveSpecimen(spec);
-                    onSelectSpecimen?.(spec);
-                  }}
-                >
-                  <Pin
-                    background="#94a3b8"
-                    borderColor="#475569"
-                    glyphColor="#ffffff"
-                    scale={0.75}
-                  />
-                </AdvancedMarker>
-              ))}
-
-              {/* Primary species markers (with spiral micro-offset for identical coords) */}
-              {displaySpecimensWithOffsets.map(({ spec, displayLat, displayLon }) => {
-                const isSelected = activeSpecimen?.num === spec.num;
-                return (
-                  <AdvancedMarker
-                    key={`sp-${spec.num}`}
-                    position={{ lat: displayLat, lng: displayLon }}
-                    zIndex={isSelected ? 50 : 20}
-                    title={`#${spec.num} ${spec.sp} — ${translateRegion(spec.region, lang)}, ${spec.waterbody}`}
-                    onClick={() => {
-                      setActiveSpecimen(spec);
-                      onSelectSpecimen?.(spec);
-                    }}
-                  >
-                    <Pin
-                      background={isSelected ? '#0284c7' : '#e11d48'}
-                      borderColor={isSelected ? '#0f172a' : '#881337'}
-                      glyphColor="#ffffff"
-                      glyphText={String(spec.num)}
-                      scale={isSelected ? 1.25 : 1.05}
-                    />
-                  </AdvancedMarker>
-                );
-              })}
-
-              {/* InfoWindow for clicked specimen */}
-              {activeSpecimen &&
-                activeSpecimen.lat !== null &&
-                activeSpecimen.lon !== null &&
-                focusedPoint && (
-                  <InfoWindow
-                    position={focusedPoint}
-                    pixelOffset={[0, -34]}
-                    maxWidth={320}
-                    onCloseClick={() => {
-                      setActiveSpecimen(null);
-                      onSelectSpecimen?.(null);
-                    }}
-                  >
-                    <div className="space-y-1.5 p-1 text-xs text-slate-900">
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-1">
-                        <span className="font-bold italic text-sm text-slate-900">
-                          {activeSpecimen.sp}
-                        </span>
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-700">
-                          {isEn
-                            ? `Slide #${activeSpecimen.num} (NN ${activeSpecimen.nn})`
-                            : `Препарат #${activeSpecimen.num} (NN ${activeSpecimen.nn})`}
-                        </span>
-                      </div>
-
-                      <div className="space-y-0.5 text-[11px] text-slate-700">
-                        <div>
-                          <span className="font-semibold text-slate-900">
-                            {isEn ? 'Region:' : 'Регион:'}
-                          </span>{' '}
-                          {translateRegion(activeSpecimen.region, lang)}
-                          {activeSpecimen.district && activeSpecimen.district !== '-'
-                            ? ` (${activeSpecimen.district})`
-                            : ''}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-slate-900">
-                            {isEn ? 'Waterbody:' : 'Водоём:'}
-                          </span>{' '}
-                          {activeSpecimen.waterbody || '—'}
-                          {activeSpecimen.inVivoColor
-                            ? ` · ${isEn ? 'color' : 'окраска'}: ${activeSpecimen.inVivoColor}`
-                            : ''}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-slate-900">
-                            {isEn ? 'Coordinates:' : 'Координаты:'}
-                          </span>{' '}
-                          <span className="font-mono">
-                            {activeSpecimen.lat.toFixed(4)}° N, {activeSpecimen.lon.toFixed(4)}° E
-                          </span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-slate-900">
-                            {isEn ? 'Collection:' : 'Сбор:'}
-                          </span>{' '}
-                          {activeSpecimen.date} · leg. {activeSpecimen.collector}
-                        </div>
-                      </div>
-
-                      <div className="rounded bg-slate-50 px-2 py-1 font-mono text-[10px] text-slate-600 border border-slate-200">
-                        cr/cs: {formatTraitNumber(activeSpecimen.traits['cr/cs'], 2)} · xa/x:{' '}
-                        {formatTraitNumber(activeSpecimen.traits['xa/x'], 2)} · A1ser:{' '}
-                        {formatTraitNumber(activeSpecimen.traits['A1ser'], 0)}
-                      </div>
-
-                      {onLoadSpecimenIntoKey && (
-                        <div className="pt-1 flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onLoadSpecimenIntoKey(activeSpecimen, 'diagnostic8')}
-                            className="flex-1 rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          >
-                            {isEn ? '8 traits' : '8 признаков'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onLoadSpecimenIntoKey(activeSpecimen, 'all')}
-                            className="flex-1 inline-flex items-center justify-center gap-1 rounded bg-sky-700 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-800 transition-colors cursor-pointer"
-                          >
-                            <Sparkles className="h-3 w-3" />
-                            {isEn ? 'Load into Key' : 'В определитель'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </InfoWindow>
-                )}
-            </Map>
-          </APIProvider>
         </div>
       )}
 

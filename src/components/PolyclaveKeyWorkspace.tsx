@@ -88,6 +88,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
   const [sortBy, setSortBy] = useState<'matrix_order' | 'best_diagnostic'>('matrix_order');
   const [sinkRedundantTraits, setSinkRedundantTraits] = useState<boolean>(true);
   const [rightPanelTab, setRightPanelTab] = useState<'candidates' | 'discarded'>('candidates');
+  const [discardedSortMode, setDiscardedSortMode] = useState<'similarity' | 'mismatches'>('similarity');
   const [isInstructionOpen, setIsInstructionOpen] = useState<boolean>(false);
   const [isAnatomyMapOpen, setIsAnatomyMapOpen] = useState<boolean>(true);
 
@@ -98,10 +99,29 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
     [evaluations]
   );
 
-  const discardedEvaluations = useMemo(
-    () => evaluations.filter((e) => !e.isCandidate),
-    [evaluations]
-  );
+  const discardedEvaluations = useMemo(() => {
+    const list = evaluations.filter((e) => !e.isCandidate);
+    if (discardedSortMode === 'mismatches') {
+      return [...list].sort((a, b) => {
+        if (a.mismatchesCount !== b.mismatchesCount) {
+          return a.mismatchesCount - b.mismatchesCount;
+        }
+        if (b.quantitativeSimilarity !== a.quantitativeSimilarity) {
+          return b.quantitativeSimilarity - a.quantitativeSimilarity;
+        }
+        return a.rmsSigmaDistance - b.rmsSigmaDistance;
+      });
+    }
+    return [...list].sort((a, b) => {
+      if (b.quantitativeSimilarity !== a.quantitativeSimilarity) {
+        return b.quantitativeSimilarity - a.quantitativeSimilarity;
+      }
+      if (Math.abs(a.rmsSigmaDistance - b.rmsSigmaDistance) > 0.02) {
+        return a.rmsSigmaDistance - b.rmsSigmaDistance;
+      }
+      return a.mismatchesCount - b.mismatchesCount;
+    });
+  }, [evaluations, discardedSortMode]);
 
   const remainingSpeciesProfiles = useMemo(
     () => remainingCandidates.map((c) => c.species),
@@ -537,7 +557,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                 </div>
                 <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-2">
                   <img
-                    src="/assets/aistudio/image_feb9e6e3.png"
+                    src={`${import.meta.env.BASE_URL}assets/aistudio/image_feb9e6e3.png`}
                     alt="Slide preparation layout for Eucyclops: Ceph+T2-T3, A2, Abd+T5, P4"
                     className="w-full h-auto object-contain rounded"
                   />
@@ -1447,18 +1467,61 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                 </button>
               </div>
 
-              {remainingCandidates.length >= 2 && (
+              {(remainingCandidates.length >= 2 ||
+                (remainingCandidates.length === 0 && discardedEvaluations.length >= 2)) && (
                 <button
                   onClick={onOpenDifferentialCompare}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <Layers className="h-3.5 w-3.5 text-sky-700" />
-                  {isEn
-                    ? `Compare (${remainingCandidates.length})`
-                    : `Сравнить (${remainingCandidates.length})`}
+                  {remainingCandidates.length >= 2
+                    ? isEn
+                      ? `Compare (${remainingCandidates.length})`
+                      : `Сравнить (${remainingCandidates.length})`
+                    : isEn
+                    ? 'Compare Top-6 Closest'
+                    : 'Сравнить Топ-6 близких'}
                 </button>
               )}
             </div>
+
+            {/* Sort toggle when viewing Eliminated / Closest species */}
+            {rightPanelTab === 'discarded' && discardedEvaluations.length > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-200/80 bg-sky-50/60 px-3 py-2 text-[11px]">
+                <span className="font-semibold text-sky-950">
+                  {isEn ? 'Rank similar species by:' : 'Ранжирование похожих видов:'}
+                </span>
+                <div className="inline-flex items-center rounded-md border border-slate-300 bg-white p-0.5 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setDiscardedSortMode('similarity')}
+                    className={`rounded px-2 py-0.5 text-[11px] transition-colors cursor-pointer ${
+                      discardedSortMode === 'similarity'
+                        ? 'bg-sky-700 text-white font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title={
+                      isEn
+                        ? 'Ranks species by continuous quantitative similarity (Gaussian kernel + RMS σ-distance across all entered traits)'
+                        : 'Учитывает величину отклонения в σ по каждому несовпавшему признаку и близость к среднему виду по совпавшим признакам'
+                    }
+                  >
+                    {isEn ? 'Quantitative Similarity (%)' : 'Количественное сходство (%)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiscardedSortMode('mismatches')}
+                    className={`rounded px-2 py-0.5 text-[11px] transition-colors cursor-pointer ${
+                      discardedSortMode === 'mismatches'
+                        ? 'bg-sky-700 text-white font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {isEn ? 'Mismatch Count' : 'Число расхождений'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Color Legend for Taxonomic Status */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600">
@@ -1501,6 +1564,13 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                     >
                       {getTaxonVisualStyle(remainingCandidates[0].species.status).badgeLabel}
                     </span>
+                    {activeFilterCount > 0 && (
+                      <span className="rounded bg-emerald-700 px-2 py-0.5 font-mono text-[11px] font-bold text-white">
+                        {isEn ? 'Similarity:' : 'Сходство:'}{' '}
+                        {remainingCandidates[0].quantitativeSimilarity}% (Δ=
+                        {remainingCandidates[0].rmsSigmaDistance.toFixed(2)}σ)
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button
@@ -1522,23 +1592,161 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
           <div className="divide-y divide-slate-200 max-h-[680px] overflow-y-auto">
             {rightPanelTab === 'candidates' ? (
               remainingCandidates.length === 0 ? (
-                <div className="p-8 text-center space-y-3">
-                  <div className="text-sm font-semibold text-slate-800">
-                    {isEn
-                      ? `No species matched all ${activeFilterCount} traits simultaneously`
-                      : `Ни один вид не подошёл под все ${activeFilterCount} признаков одновременно`}
+                <div className="p-5 space-y-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 space-y-2">
+                    <div className="text-sm font-bold text-slate-900">
+                      {isEn
+                        ? `No species strictly matched all ${activeFilterCount} traits simultaneously`
+                        : `Ни один вид строго не уложился во все ${activeFilterCount} признаков одновременно`}
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed">
+                      {isEn
+                        ? 'Specimens from literature descriptions or distant populations often slightly exceed known trait boundaries. Below is the Quantitative Morphological Similarity ranking (combining Gaussian kernel proximity to species means and standardized σ-deviation on mismatched traits).'
+                        : 'Особи из литературных описаний или удалённых популяций часто выходят за известные границы отдельных признаков. Ниже приведено ранжирование по количественному индексу морфологического сходства (учитывается близость к среднему вида по совпавшим признакам и величина промаха в единицах σ по несовпавшим).'}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        onClick={() => setRightPanelTab('discarded')}
+                        className="rounded-lg bg-sky-700 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-800 transition-colors cursor-pointer"
+                      >
+                        {isEn
+                          ? `Open Full Quantitative Ranking (${discardedEvaluations.length} species)`
+                          : `Открыть полный рейтинг похожих видов (${discardedEvaluations.length})`}
+                      </button>
+                      <button
+                        onClick={onOpenDifferentialCompare}
+                        className="rounded-lg border border-sky-300 bg-white px-3 py-1.5 text-xs font-semibold text-sky-900 hover:bg-sky-50 transition-colors cursor-pointer"
+                      >
+                        {isEn
+                          ? 'Compare Top-6 Closest in Matrix'
+                          : 'Сравнить Топ-6 близких в матрице'}
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-600">
-                    {isEn
-                      ? `Switch to the “Eliminated (${discardedEvaluations.length})” tab to inspect species with 1 mismatch, or increase the σ tolerance slider.`
-                      : `Переключитесь на вкладку «Отсеянные (${discardedEvaluations.length})», чтобы увидеть виды с 1 расхождением, или увеличьте коэффициент допуска σ.`}
-                  </p>
-                  <button
-                    onClick={() => setRightPanelTab('discarded')}
-                    className="rounded-lg bg-sky-700 px-4 py-2 text-xs font-medium text-white hover:bg-sky-800 transition-colors cursor-pointer"
-                  >
-                    {isEn ? 'Show closest eliminated species' : 'Показать ближайшие отсеянные виды'}
-                  </button>
+
+                  {/* Top-5 Closest Species by Quantitative Similarity Preview */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
+                      <span>
+                        {isEn
+                          ? 'Top-5 Most Similar Species (Quantitative Assessment):'
+                          : 'Топ-5 наиболее близких видов (количественная оценка сходства):'}
+                      </span>
+                      <span className="font-mono text-[11px] font-normal text-slate-500">
+                        {isEn ? 'Sorted by % similarity & Δσ' : 'Сортировка по % сходства и Δσ'}
+                      </span>
+                    </div>
+
+                    {discardedEvaluations.slice(0, 5).map((item, idx) => {
+                      const { species, mismatchReasons } = item;
+                      const taxonStyle = getTaxonVisualStyle(species.status);
+                      const matchedCount = item.exactMatchesCount + item.extrapolatedMatchesCount;
+                      const simColor =
+                        item.quantitativeSimilarity >= 75
+                          ? 'bg-emerald-600 text-white'
+                          : item.quantitativeSimilarity >= 55
+                          ? 'bg-sky-700 text-white'
+                          : 'bg-amber-600 text-white';
+
+                      return (
+                        <div
+                          key={species.sp}
+                          className={`rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs hover:bg-slate-50 transition-colors ${taxonStyle.borderLeft}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-slate-400">
+                                  #{idx + 1}
+                                </span>
+                                <button
+                                  onClick={() => onSelectSpeciesDetail(species, item)}
+                                  className={`text-sm font-bold italic text-left cursor-pointer ${taxonStyle.nameColor}`}
+                                >
+                                  {species.sp}
+                                </button>
+                                <span
+                                  className={`rounded px-2 py-0.5 font-mono text-xs font-bold tabular-nums ${simColor}`}
+                                >
+                                  {isEn ? 'Similarity:' : 'Сходство:'} {item.quantitativeSimilarity}%
+                                </span>
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">
+                                  Δ = {item.rmsSigmaDistance.toFixed(2)}σ
+                                </span>
+                                <span className="font-mono text-[11px] text-slate-500">
+                                  · {isEn ? 'matches:' : 'совпад.:'} {matchedCount}/{activeFilterCount}
+                                  {item.nearestSpecimenNum !== null &&
+                                    ` · ${isEn ? 'closest spec.' : 'ближ. экз.'} #${item.nearestSpecimenNum}`}
+                                </span>
+                              </div>
+
+                              {/* Mismatches with quantitative sigma gap */}
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {mismatchReasons.map((m) => {
+                                  const isMarginal = m.mismatchSeverity === 'marginal';
+                                  const isSevere = m.mismatchSeverity === 'severe';
+                                  return (
+                                    <div
+                                      key={m.traitCode}
+                                      className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[11px] ${
+                                        isMarginal
+                                          ? 'border-amber-300 bg-amber-50 text-amber-950'
+                                          : isSevere
+                                          ? 'border-rose-300 bg-rose-50 text-rose-950'
+                                          : 'border-orange-200 bg-orange-50/70 text-orange-950'
+                                      }`}
+                                    >
+                                      <span className="font-bold">{m.traitCode}</span>:
+                                      <span>{m.userInputSummary}</span>
+                                      <span className="text-slate-500">
+                                        ({isEn ? 'tol.' : 'доп.'} {m.speciesExtrapolatedSummary})
+                                      </span>
+                                      <span
+                                        className={`rounded px-1 py-0.2 text-[10px] font-bold ${
+                                          isMarginal
+                                            ? 'bg-amber-200/80 text-amber-950'
+                                            : isSevere
+                                            ? 'bg-rose-200/80 text-rose-950'
+                                            : 'bg-orange-200/80 text-orange-950'
+                                        }`}
+                                      >
+                                        +{m.sigmaGapFromTolerance.toFixed(2)}σ
+                                        {isMarginal
+                                          ? isEn
+                                            ? ' (near edge)'
+                                            : ' (на границе)'
+                                          : ''}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => clearSingleTrait(m.traitCode)}
+                                        className="ml-0.5 text-slate-400 hover:text-rose-700 font-sans font-bold cursor-pointer"
+                                        title={
+                                          isEn
+                                            ? `Remove filter ${m.traitCode} to test candidate`
+                                            : `Убрать фильтр ${m.traitCode} для проверки вида`
+                                        }
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => onSelectSpeciesDetail(species, item)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 shrink-0 cursor-pointer"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              {isEn ? 'Profile' : 'Профиль'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 remainingCandidates.map((item) => {
@@ -1555,7 +1763,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                       className={`p-4 hover:bg-slate-50 transition-colors ${taxonStyle.borderLeft}`}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               onClick={() => onSelectSpeciesDetail(species, item)}
@@ -1568,8 +1776,17 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             >
                               {taxonStyle.badgeLabel}
                             </span>
+                            {activeFilterCount > 0 && (
+                              <span className="rounded bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 font-mono text-[11px] font-bold text-emerald-950 tabular-nums">
+                                {isEn ? 'Similarity:' : 'Сходство:'} {item.quantitativeSimilarity}%
+                                {' · '}Δ={item.rmsSigmaDistance.toFixed(2)}σ
+                              </span>
+                            )}
                             <span className="font-mono text-xs tabular-nums text-slate-500">
                               · n={species.specimenCount} · {isEn ? 'gr.' : 'гр.'} {species.group}
+                              {activeFilterCount > 0 &&
+                                item.nearestSpecimenNum !== null &&
+                                ` · ${isEn ? 'closest' : 'ближ.'} #${item.nearestSpecimenNum}`}
                             </span>
                           </div>
 
@@ -1636,17 +1853,30 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                   : 'Пока ни один вид не отсеян. Введите значения наблюдаемых признаков слева.'}
               </div>
             ) : (
-              discardedEvaluations.map((item) => {
+              discardedEvaluations.map((item, idx) => {
                 const { species, mismatchReasons } = item;
                 const taxonStyle = getTaxonVisualStyle(species.status);
+                const matchedCount = item.exactMatchesCount + item.extrapolatedMatchesCount;
+                const simBadgeClass =
+                  item.quantitativeSimilarity >= 75
+                    ? 'bg-emerald-700 text-white'
+                    : item.quantitativeSimilarity >= 55
+                    ? 'bg-sky-700 text-white'
+                    : item.quantitativeSimilarity >= 35
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-slate-600 text-white';
+
                 return (
                   <div
                     key={species.sp}
                     className={`p-4 hover:bg-slate-50 transition-colors ${taxonStyle.borderLeft}`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-slate-400">
+                            #{idx + 1}
+                          </span>
                           <button
                             onClick={() => onSelectSpeciesDetail(species, item)}
                             className={`text-sm font-bold italic text-left cursor-pointer ${taxonStyle.nameColor}`}
@@ -1658,42 +1888,154 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                           >
                             {taxonStyle.badgeLabel}
                           </span>
+                          <span
+                            className={`rounded px-2 py-0.5 font-mono text-xs font-bold tabular-nums ${simBadgeClass}`}
+                            title={
+                              isEn
+                                ? 'Quantitative morphological similarity index across all entered traits'
+                                : 'Количественный индекс морфологического сходства по всем введённым признакам'
+                            }
+                          >
+                            {isEn ? 'Similarity:' : 'Сходство:'} {item.quantitativeSimilarity}%
+                          </span>
+                          <span
+                            className="rounded bg-slate-100 border border-slate-200 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-700 tabular-nums"
+                            title={
+                              isEn
+                                ? 'Root-mean-square standardized distance in intraspecific SD (σ) units'
+                                : 'Среднеквадратичное стандартизованное отклонение в единицах внутривидового σ'
+                            }
+                          >
+                            Δ = {item.rmsSigmaDistance.toFixed(2)}σ
+                          </span>
                           <span className="font-mono text-xs tabular-nums text-slate-400">
                             · n={species.specimenCount} · {isEn ? 'gr.' : 'гр.'} {species.group}
+                            {item.nearestSpecimenNum !== null &&
+                              ` · ${isEn ? 'closest spec.' : 'ближ. экз.'} #${item.nearestSpecimenNum}`}
                           </span>
                         </div>
 
-                        <div className="mt-1 text-xs font-medium text-rose-700 flex items-center gap-1">
-                          <XCircle className="h-3.5 w-3.5 shrink-0" />
-                          <span>
-                            {isEn
-                              ? `Eliminated by ${mismatchReasons.length} ${
-                                  mismatchReasons.length === 1 ? 'trait' : 'traits'
-                                }:`
-                              : `Отсеян по ${mismatchReasons.length} ${
-                                  mismatchReasons.length === 1 ? 'признаку' : 'признакам'
-                                }:`}
-                          </span>
-                        </div>
-
-                        <div className="mt-1.5 space-y-1 font-mono text-[11px] text-slate-700">
-                          {mismatchReasons.map((m) => (
-                            <div
-                              key={m.traitCode}
-                              className="rounded border border-rose-200/80 bg-rose-50/50 px-2.5 py-1"
-                            >
-                              <span className="font-semibold text-rose-950">{m.traitCode}</span>:{' '}
-                              {isEn ? 'entered' : 'введено'}{' '}
-                              <span className="font-semibold text-rose-800">
-                                {m.userInputSummary}
-                              </span>{' '}
-                              ({isEn ? 'species raw:' : 'у вида табл.:'} {m.speciesRawSummary}
-                              {m.speciesExtrapolatedSummary !== m.speciesRawSummary
-                                ? `, ${isEn ? 'tol.:' : 'допуск:'} ${m.speciesExtrapolatedSummary}`
-                                : ''}
-                              )
+                        {/* Quantitative Similarity Bar + Matches vs Mismatches Summary */}
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
+                              <div
+                                className={`h-full transition-all ${
+                                  item.quantitativeSimilarity >= 75
+                                    ? 'bg-emerald-600'
+                                    : item.quantitativeSimilarity >= 55
+                                    ? 'bg-sky-600'
+                                    : item.quantitativeSimilarity >= 35
+                                    ? 'bg-amber-500'
+                                    : 'bg-rose-500'
+                                }`}
+                                style={{ width: `${item.quantitativeSimilarity}%` }}
+                              />
                             </div>
-                          ))}
+                          </div>
+                          <span className="font-medium text-emerald-800">
+                            {isEn
+                              ? `Matched: ${matchedCount}/${activeFilterCount}`
+                              : `Совпало: ${matchedCount}/${activeFilterCount}`}
+                          </span>
+                          <span className="font-medium text-rose-700 flex items-center gap-1">
+                            <XCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span>
+                              {isEn
+                                ? `Mismatches: ${mismatchReasons.length}${
+                                    item.marginalMismatchesCount > 0
+                                      ? ` (${item.marginalMismatchesCount} marginal ≤0.75σ)`
+                                      : ''
+                                  }`
+                                : `Расхождений: ${mismatchReasons.length}${
+                                    item.marginalMismatchesCount > 0
+                                      ? ` (из них ${item.marginalMismatchesCount} пограничн. ≤0.75σ)`
+                                      : ''
+                                  }`}
+                            </span>
+                          </span>
+                        </div>
+
+                        {/* Detailed Mismatch Cards with quantitative sigma distance */}
+                        <div className="mt-2 space-y-1.5 font-mono text-[11px] text-slate-700">
+                          {mismatchReasons.map((m) => {
+                            const isMarginal = m.mismatchSeverity === 'marginal';
+                            const isSevere = m.mismatchSeverity === 'severe';
+                            const trDesc = getTraitDisplayDescription(
+                              m.traitCode,
+                              traitAnnotations,
+                              lang
+                            );
+
+                            return (
+                              <div
+                                key={m.traitCode}
+                                className={`rounded-lg border px-2.5 py-1.5 flex items-center justify-between gap-2 ${
+                                  isMarginal
+                                    ? 'border-amber-300/90 bg-amber-50/70'
+                                    : isSevere
+                                    ? 'border-rose-200/90 bg-rose-50/60'
+                                    : 'border-orange-200/90 bg-orange-50/50'
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="font-bold text-slate-900">{m.traitCode}</span>
+                                    <span className="font-sans text-[11px] text-slate-600 truncate max-w-[220px]">
+                                      ({trDesc})
+                                    </span>
+                                    <span
+                                      className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                        isMarginal
+                                          ? 'bg-amber-200/80 text-amber-950'
+                                          : isSevere
+                                          ? 'bg-rose-200/80 text-rose-950'
+                                          : 'bg-orange-200/80 text-orange-950'
+                                      }`}
+                                    >
+                                      +{m.sigmaGapFromTolerance.toFixed(2)}σ{' '}
+                                      {isMarginal
+                                        ? isEn
+                                          ? '· marginal miss'
+                                          : '· пограничное откл.'
+                                        : isSevere
+                                        ? isEn
+                                          ? '· strong divergence'
+                                          : '· сильное отличие'
+                                        : isEn
+                                        ? '· moderate dev.'
+                                        : '· умеренное откл.'}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500">
+                                      {isEn ? 'trait sim:' : 'сходство признака:'} {m.traitSimilarity}%
+                                    </span>
+                                  </div>
+                                  <div className="mt-0.5 text-[11px]">
+                                    {isEn ? 'entered:' : 'введено:'}{' '}
+                                    <span className="font-bold text-rose-900">
+                                      {m.userInputSummary}
+                                    </span>{' '}
+                                    · {isEn ? 'species raw:' : 'у вида табл.:'} {m.speciesRawSummary}
+                                    {m.speciesExtrapolatedSummary !== m.speciesRawSummary
+                                      ? ` (${isEn ? 'tol.:' : 'допуск:'} ${m.speciesExtrapolatedSummary})`
+                                      : ''}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => clearSingleTrait(m.traitCode)}
+                                  className="rounded border border-slate-300 bg-white px-2 py-0.5 font-sans text-[10px] font-medium text-slate-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800 shrink-0 cursor-pointer"
+                                  title={
+                                    isEn
+                                      ? 'Remove this trait filter to see if the species becomes a candidate'
+                                      : 'Сбросить этот признак, чтобы проверить вид без него'
+                                  }
+                                >
+                                  {isEn ? 'Relax ×' : 'Сбросить ×'}
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
