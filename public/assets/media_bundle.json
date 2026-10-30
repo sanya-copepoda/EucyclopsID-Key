@@ -155,5 +155,27 @@
       "imageSourceUrl": "https://doi.org/10.3897/zookeys.1226.138389"
     }
   },
-  "speciesMedia": {}
+  "speciesMedia": {
+    "E. arcanus": {
+      "sp": "E. arcanus",
+      "femaleImageUrl": "assets/aistudio/arcanus_F_9711fdc3.jpg"
+    },
+    "E. caridinus": {
+      "sp": "E. caridinus",
+      "femaleImageUrl": "assets/aistudio/cardinus_F_5ac34301.png"
+    },
+    "E. chilensis": {
+      "sp": "E. chilensis",
+      "femaleImageUrl": "assets/aistudio/chilensis_F_65d42e9c.png"
+    },
+    "E. sibiricus": {
+      "sp": "E. sibiricus",
+      "femaleImageUrl": "assets/aistudio/sibiricus_F_123be230.jpg",
+      "maleImageUrl": "assets/aistudio/sibiricus_M_400f2760.jpg"
+    },
+    "E. speratus": {
+      "sp": "E. speratus",
+      "femaleImageUrl": "assets/aistudio/speratus_F_19dcc1f4.jpg"
+    }
+  }
 }

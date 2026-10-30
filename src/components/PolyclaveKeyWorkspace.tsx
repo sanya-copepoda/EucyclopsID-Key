@@ -16,12 +16,14 @@ import {
   ChevronUp,
   Info,
   Scale,
+  Camera,
 } from 'lucide-react';
 import {
   AnatomicalSection,
   ExtrapolationMethod,
   KeyConfig,
   SpeciesCandidateEvaluation,
+  SpeciesMedia,
   SpeciesProfile,
   TraitAnnotation,
   TraitDefinition,
@@ -47,6 +49,7 @@ interface PolyclaveKeyWorkspaceProps {
   traits: TraitDefinition[];
   traitMap: Record<string, TraitDefinition>;
   traitAnnotations: Record<string, TraitAnnotation>;
+  speciesMediaMap?: Record<string, SpeciesMedia>;
   evaluations: SpeciesCandidateEvaluation[];
   activeFilters: Record<string, UserTraitFilter>;
   config: KeyConfig;
@@ -66,6 +69,7 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
   traits,
   traitMap,
   traitAnnotations,
+  speciesMediaMap = {},
   evaluations,
   activeFilters,
   config,
@@ -1780,6 +1784,26 @@ export const PolyclaveKeyWorkspace: React.FC<PolyclaveKeyWorkspaceProps> = ({
                             >
                               {taxonStyle.badgeLabel}
                             </span>
+                            {(speciesMediaMap[species.sp]?.femaleImageUrl ||
+                              speciesMediaMap[species.sp]?.maleImageUrl) && (
+                              <button
+                                type="button"
+                                onClick={() => onSelectSpeciesDetail(species, item)}
+                                className="inline-flex items-center gap-1 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-900 hover:bg-sky-200 transition-colors cursor-pointer"
+                                title={
+                                  isEn
+                                    ? 'Habitus photograph available in species card'
+                                    : 'В карточке вида загружена фотография габитуса'
+                                }
+                              >
+                                <Camera className="h-3 w-3 text-sky-700" />
+                                <span>
+                                  {isEn ? 'Photo' : 'Фото'}{' '}
+                                  {speciesMediaMap[species.sp]?.femaleImageUrl ? '♀' : ''}
+                                  {speciesMediaMap[species.sp]?.maleImageUrl ? '♂' : ''}
+                                </span>
+                              </button>
+                            )}
                             {activeFilterCount > 0 && (
                               <span className="rounded bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 font-mono text-[11px] font-bold text-emerald-950 tabular-nums">
                                 {isEn ? 'Similarity:' : 'Сходство:'} {item.quantitativeSimilarity}%

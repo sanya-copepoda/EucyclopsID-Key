@@ -64,9 +64,23 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
   const { lang } = useLanguage();
   const isEn = lang === 'en';
 
-  const hasPhotos = Boolean(
-    speciesMedia?.femaleImageUrl || speciesMedia?.maleImageUrl
-  );
+  const resolveAssetUrl = (rawUrl?: string): string | undefined => {
+    if (!rawUrl) return undefined;
+    if (
+      rawUrl.startsWith('data:') ||
+      rawUrl.startsWith('http://') ||
+      rawUrl.startsWith('https://') ||
+      rawUrl.startsWith('blob:')
+    ) {
+      return rawUrl;
+    }
+    const cleanRel = rawUrl.replace(/^\/+/, '');
+    return `${import.meta.env.BASE_URL}${cleanRel}`;
+  };
+
+  const femalePhotoUrl = resolveAssetUrl(speciesMedia?.femaleImageUrl);
+  const malePhotoUrl = resolveAssetUrl(speciesMedia?.maleImageUrl);
+  const hasPhotos = Boolean(femalePhotoUrl || malePhotoUrl);
 
   const [activeTab, setActiveTab] = useState<'traits' | 'specimens'>('traits');
   const [showMapInProfile, setShowMapInProfile] = useState<boolean>(true);
@@ -296,13 +310,13 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
 
               <div
                 className={`grid grid-cols-1 gap-4 ${
-                  speciesMedia?.femaleImageUrl && speciesMedia?.maleImageUrl
+                  femalePhotoUrl && malePhotoUrl
                     ? 'sm:grid-cols-2'
                     : 'sm:grid-cols-1 max-w-xl'
                 }`}
               >
                 {/* Female ♀ Card */}
-                {speciesMedia?.femaleImageUrl && (
+                {femalePhotoUrl && (
                   <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900">
@@ -317,15 +331,15 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                       <div
                         onClick={() =>
                           setLightboxImage({
-                            url: speciesMedia.femaleImageUrl!,
+                            url: femalePhotoUrl,
                             title: `${species.sp} — ${isEn ? 'Female (♀)' : 'Самка (♀)'}`,
-                            subtitle: speciesMedia.femaleCaption || speciesMedia.photoSource,
+                            subtitle: speciesMedia?.femaleCaption || speciesMedia?.photoSource,
                           })
                         }
                         className="group relative flex h-64 cursor-zoom-in items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-950/95"
                       >
                         <img
-                          src={speciesMedia.femaleImageUrl}
+                          src={femalePhotoUrl}
                           alt={`${species.sp} female`}
                           className="max-h-full max-w-full object-contain transition-transform group-hover:scale-[1.02]"
                         />
@@ -334,7 +348,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                           {isEn ? 'Enlarge' : 'Увеличить'}
                         </span>
                       </div>
-                      {speciesMedia.femaleCaption?.trim() && (
+                      {speciesMedia?.femaleCaption?.trim() && (
                         <p className="text-[11px] text-slate-600 px-1">
                           {speciesMedia.femaleCaption}
                         </p>
@@ -344,7 +358,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                 )}
 
                 {/* Male ♂ Card */}
-                {speciesMedia?.maleImageUrl && (
+                {malePhotoUrl && (
                   <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900">
@@ -359,15 +373,15 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                       <div
                         onClick={() =>
                           setLightboxImage({
-                            url: speciesMedia.maleImageUrl!,
+                            url: malePhotoUrl,
                             title: `${species.sp} — ${isEn ? 'Male (♂)' : 'Самец (♂)'}`,
-                            subtitle: speciesMedia.maleCaption || speciesMedia.photoSource,
+                            subtitle: speciesMedia?.maleCaption || speciesMedia?.photoSource,
                           })
                         }
                         className="group relative flex h-64 cursor-zoom-in items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-950/95"
                       >
                         <img
-                          src={speciesMedia.maleImageUrl}
+                          src={malePhotoUrl}
                           alt={`${species.sp} male`}
                           className="max-h-full max-w-full object-contain transition-transform group-hover:scale-[1.02]"
                         />
@@ -376,7 +390,7 @@ export const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                           {isEn ? 'Enlarge' : 'Увеличить'}
                         </span>
                       </div>
-                      {speciesMedia.maleCaption?.trim() && (
+                      {speciesMedia?.maleCaption?.trim() && (
                         <p className="text-[11px] text-slate-600 px-1">
                           {speciesMedia.maleCaption}
                         </p>

@@ -81,19 +81,58 @@ export function getSpeciesTaxonomicMeta(sp: string): SpeciesTaxonomicMeta | unde
 
 const SPECIES_MEDIA_STORAGE_KEY = 'eucyclops_species_media_v1';
 
+/**
+ * Built-in repository photographs of female (♀) and male (♂) habitus
+ * stored in public/assets/aistudio/ (compressed for web & GitHub repository).
+ */
+export const BUILTIN_SPECIES_MEDIA: Record<string, SpeciesMedia> = {
+  'E. arcanus': {
+    sp: 'E. arcanus',
+    femaleImageUrl: 'assets/aistudio/arcanus_F_9711fdc3.jpg',
+  },
+  'E. caridinus': {
+    sp: 'E. caridinus',
+    femaleImageUrl: 'assets/aistudio/cardinus_F_5ac34301.png',
+  },
+  'E. chilensis': {
+    sp: 'E. chilensis',
+    femaleImageUrl: 'assets/aistudio/chilensis_F_65d42e9c.png',
+  },
+  'E. sibiricus': {
+    sp: 'E. sibiricus',
+    femaleImageUrl: 'assets/aistudio/sibiricus_F_123be230.jpg',
+    maleImageUrl: 'assets/aistudio/sibiricus_M_400f2760.jpg',
+  },
+  'E. speratus': {
+    sp: 'E. speratus',
+    femaleImageUrl: 'assets/aistudio/speratus_F_19dcc1f4.jpg',
+  },
+};
+
 export function loadSpeciesMediaMap(): Record<string, SpeciesMedia> {
+  const merged: Record<string, SpeciesMedia> = { ...BUILTIN_SPECIES_MEDIA };
   try {
     const raw = localStorage.getItem(SPECIES_MEDIA_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return parsed as Record<string, SpeciesMedia>;
+        for (const [sp, media] of Object.entries(parsed as Record<string, SpeciesMedia>)) {
+          const builtin = BUILTIN_SPECIES_MEDIA[sp];
+          merged[sp] = {
+            sp,
+            femaleImageUrl: media.femaleImageUrl || builtin?.femaleImageUrl,
+            femaleCaption: media.femaleCaption || builtin?.femaleCaption,
+            maleImageUrl: media.maleImageUrl || builtin?.maleImageUrl,
+            maleCaption: media.maleCaption || builtin?.maleCaption,
+            photoSource: media.photoSource || builtin?.photoSource,
+          };
+        }
       }
     }
   } catch {
     // ignore storage errors
   }
-  return {};
+  return merged;
 }
 
 export function saveSpeciesMediaMap(mediaMap: Record<string, SpeciesMedia>): void {
@@ -123,6 +162,10 @@ export function getSpeciesFileSlug(sp: string): string {
 export function getTraitFileSlug(traitCode: string): string {
   return traitCode.trim().replace(/[/\s]+/g, '_');
 }
+
+const EPITHET_FILENAME_ALIASES: Record<string, string[]> = {
+  caridinus: ['cardinus'],
+};
 
 /**
  * Automatically guesses which species and sex (female / male) an image filename corresponds to.
@@ -167,6 +210,10 @@ export function matchSpeciesAndSexFromFilename(
       .toLowerCase();
     const cleanEpithet = epithet.replace(/[^a-z0-9а-яё]+/gi, '');
     if (cleanEpithet && normalizedFile.includes(cleanEpithet)) {
+      return { sp, sex };
+    }
+    const aliases = EPITHET_FILENAME_ALIASES[cleanEpithet];
+    if (aliases && aliases.some((al) => normalizedFile.includes(al))) {
       return { sp, sex };
     }
   }

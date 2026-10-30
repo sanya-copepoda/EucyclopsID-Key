@@ -126,10 +126,18 @@ export default function App() {
             });
           }
           if (bundle.speciesMedia && Object.keys(bundle.speciesMedia).length > 0) {
-            setSpeciesMediaMap((prev) => ({
-              ...bundle.speciesMedia,
-              ...prev,
-            }));
+            setSpeciesMediaMap((prev) => {
+              const merged = { ...prev };
+              for (const [sp, media] of Object.entries(bundle.speciesMedia!)) {
+                merged[sp] = {
+                  ...merged[sp],
+                  ...media,
+                  femaleImageUrl: merged[sp]?.femaleImageUrl || media.femaleImageUrl,
+                  maleImageUrl: merged[sp]?.maleImageUrl || media.maleImageUrl,
+                };
+              }
+              return merged;
+            });
           }
         }
       })
@@ -477,11 +485,42 @@ export default function App() {
 
       {/* Main Content Container (1440px max-w) */}
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-6 py-6">
+        {/* Geographical Scope & Limitations Notice */}
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-xs leading-relaxed text-slate-700">
+          <Globe className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <div>
+            {isEn ? (
+              <>
+                <span className="font-semibold text-slate-900">Geographical scope:</span>{' '}
+                This key is primarily intended for <em>Eucyclops</em> of{' '}
+                <span className="font-medium text-slate-900">Russia and adjacent territories</span>. It is very likely to work reliably in{' '}
+                <span className="font-medium text-slate-900">European Russia</span> and{' '}
+                <span className="font-medium text-slate-900">most of Siberia</span>. Apply with caution in the{' '}
+                <span className="font-medium text-amber-900">Far East</span> (especially the southern Far East),{' '}
+                <span className="font-semibold text-rose-700">do not apply in the Caspian Sea</span>, and apply with caution in the{' '}
+                <span className="font-medium text-amber-900">Caucasus</span> (especially in samples from subterranean habitats).
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-slate-900">Географический охват:</span>{' '}
+                ключ предназначен прежде всего для эуциклопов (<em>Eucyclops</em>){' '}
+                <span className="font-medium text-slate-900">России и ближайших территорий</span>. С большой вероятностью он будет работать в{' '}
+                <span className="font-medium text-slate-900">европейской части России</span> и{' '}
+                <span className="font-medium text-slate-900">большей части Сибири</span>. С осторожностью его надо применять на{' '}
+                <span className="font-medium text-amber-900">Дальнем Востоке</span> (особенно на юге Дальнего Востока),{' '}
+                <span className="font-semibold text-rose-700">не применять в Каспии</span> и с осторожностью применять на{' '}
+                <span className="font-medium text-amber-900">Кавказе</span> (особенно в пробах из подземных биотопов).
+              </>
+            )}
+          </div>
+        </div>
+
         {activeTab === 'key' && (
           <PolyclaveKeyWorkspace
             traits={dataset.traits}
             traitMap={dataset.traitMap}
             traitAnnotations={traitAnnotations}
+            speciesMediaMap={speciesMediaMap}
             evaluations={evaluations}
             activeFilters={activeFilters}
             config={config}
@@ -565,6 +604,24 @@ export default function App() {
               <Mail className="h-3 w-3" />
               aleksandr-novikov-2011@list.ru
             </a>
+            <span>·</span>
+            <span>
+              {isEn ? 'All data are distributed under ' : 'Все данные распространяются как '}
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-slate-700 hover:text-sky-800 hover:underline"
+              >
+                CC BY 4.0
+              </a>
+            </span>
+            <span>·</span>
+            <span>
+              {isEn
+                ? 'Last database update: September 10, 2026'
+                : 'Последнее обновление базы: 10 сентября 2026 г.'}
+            </span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <input
